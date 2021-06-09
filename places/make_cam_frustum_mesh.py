@@ -40,7 +40,7 @@ def make_cam_frsutum_mesh():
     field_of_view = camera.data.angle
 
     # this is the angle for the trigonometry right angle triangle
-    angle_radians = camera.data.angle / 2
+    angle_radians = field_of_view / 2
     extrude_distance = opposite / math.tan(angle_radians)
 
     #  turn on edit mode
@@ -67,3 +67,5 @@ def make_cam_frsutum_mesh():
 
     # now there should be a mesh the same shape as the camera object
     # the new mesh can be scaled to see the camera frustum at a longer distance
+
+    bpy.ops.transform.resize(value=(50, 50, 50))

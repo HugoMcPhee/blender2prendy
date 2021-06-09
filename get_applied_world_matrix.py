@@ -10,7 +10,7 @@ def get_applied_world_matrix(selobj):
     if selobj.rotation_mode == "AXIS_ANGLE":
         # object rotation_quaternionmode axisangle
         ang, x, y, z = selobj.rotation_axis_angle
-        matrix = Matrix.Rotation(-ang, 4, Vector((x, y, z)))
+        matrix = Matrix().Rotation(-ang, 4, Vector((x, y, z)))
     elif selobj.rotation_mode == "QUATERNION":
         # object rotation_quaternionmode euler
         w, x, y, z = selobj.rotation_quaternion
@@ -23,27 +23,27 @@ def get_applied_world_matrix(selobj):
     else:
         # object rotation_quaternionmode euler
         ax, ay, az = selobj.rotation_euler
-        mat_rotX = Matrix.Rotation(-ax, 4, "X")
-        mat_rotY = Matrix.Rotation(-ay, 4, "Y")
-        mat_rotZ = Matrix.Rotation(-az, 4, "Z")
+        mat_rotX = Matrix().Rotation(-ax, 4, "X")
+        mat_rotY = Matrix().Rotation(-ay, 4, "Y")
+        mat_rotZ = Matrix().Rotation(-az, 4, "Z")
         if selobj.rotation_mode == "XYZ":
-            matrix = mat_rotX * mat_rotY * mat_rotZ
+            matrix = mat_rotX @ mat_rotY @ mat_rotZ
         elif selobj.rotation_mode == "XZY":
-            matrix = mat_rotX * mat_rotZ * mat_rotY
+            matrix = mat_rotX @ mat_rotZ @ mat_rotY
         elif selobj.rotation_mode == "YXZ":
-            matrix = mat_rotY * mat_rotX * mat_rotZ
+            matrix = mat_rotY @ mat_rotX @ mat_rotZ
         elif selobj.rotation_mode == "YZX":
-            matrix = mat_rotY * mat_rotZ * mat_rotX
+            matrix = mat_rotY @ mat_rotZ @ mat_rotX
         elif selobj.rotation_mode == "ZXY":
-            matrix = mat_rotZ * mat_rotX * mat_rotY
+            matrix = mat_rotZ @ mat_rotX @ mat_rotY
         elif selobj.rotation_mode == "ZYX":
-            matrix = mat_rotZ * mat_rotY * mat_rotX
+            matrix = mat_rotZ @ mat_rotY @ mat_rotX
     # handle object scaling
     sx, sy, sz = selobj.scale
-    mat_scX = Matrix.Scale(sx, 4, Vector([1, 0, 0]))
-    mat_scY = Matrix.Scale(sy, 4, Vector([0, 1, 0]))
-    mat_scZ = Matrix.Scale(sz, 4, Vector([0, 0, 1]))
-    matrix = mat_scX * mat_scY * mat_scZ * matrix
+    mat_scX = Matrix().Scale(sx, 4, Vector([1, 0, 0]))
+    mat_scY = Matrix().Scale(sy, 4, Vector([0, 1, 0]))
+    mat_scZ = Matrix().Scale(sz, 4, Vector([0, 0, 1]))
+    matrix = mat_scX @ mat_scY @ mat_scZ @ matrix
 
     return matrix
 

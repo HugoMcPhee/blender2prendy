@@ -1,3 +1,4 @@
+from .get_cam_floor_point import get_cam_floor_point
 from .make_cam_frustum_mesh import make_cam_frsutum_mesh
 from .combine_videos import combine_videos
 from .custom_render_video import custom_render_video
@@ -1035,6 +1036,20 @@ class RenderTools_Operator_MakeCamFrustumMesh(Operator):
         return {"FINISHED"}
 
 
+class RenderTools_Operator_CheckCamFloorPoint(Operator):
+    bl_label = "Check Camera Floor Point"
+    bl_idname = "wm.make_check_camera_floor_point"
+
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def execute(self, context):
+        scene = context.scene
+        get_cam_floor_point(context, bpy.data.objects["Camera"])
+        return {"FINISHED"}
+
+
 # ------------------------------------------------------------------------
 #    Panel in Object Mode
 # ------------------------------------------------------------------------
@@ -1068,6 +1083,11 @@ class RenderTools_Panel(Panel):
         layout.operator(
             "wm.make_camera_frustum_mesh",
             text="Make Camera Frustum Mesh",
+            icon="VIEW_CAMERA",
+        )
+        layout.operator(
+            "wm.make_check_camera_floor_point",
+            text="Make Check Camera Floor Point",
             icon="VIEW_CAMERA",
         )
 
@@ -1174,6 +1194,7 @@ classes = (
     RenderTools_Operator_SetupPlace,
     RenderTools_Operator_RenderVideos,
     RenderTools_Operator_MakeCamFrustumMesh,
+    RenderTools_Operator_CheckCamFloorPoint,
     # panels
     RenderTools_Panel,
     SegmentTogglePanel,
