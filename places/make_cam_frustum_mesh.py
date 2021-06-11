@@ -7,10 +7,9 @@ import math
 # the viewport camera looks like a point and a plane, this starts by making the plane
 
 
-def make_cam_frsutum_mesh():
+def make_cam_frustum_mesh(camera):
 
     scene = bpy.context.scene
-    camera = scene.camera
 
     #  get the height scale for the new plane
     #  like 9/16 for a 16:9 ratio
@@ -24,6 +23,8 @@ def make_cam_frsutum_mesh():
         location=(camera.location),
         rotation=(camera.rotation_euler),
     )
+    cam_frustum_mesh = bpy.context.active_object
+    cam_frustum_mesh.name = "cam_frustum_mesh"
 
     # make the plane have the correct aspect ratio (like 16:9)
     # (for some reason, setting scale when creating doesn't work)
@@ -44,7 +45,8 @@ def make_cam_frsutum_mesh():
     extrude_distance = opposite / math.tan(angle_radians)
 
     #  turn on edit mode
-    bpy.ops.object.editmode_toggle()
+    # bpy.ops.object.editmode_toggle()
+    bpy.ops.object.mode_set(mode="EDIT")
     # select the planes face
     bpy.ops.mesh.select_all(action="SELECT")
     # move it to the same position as the camera rectangle shown in the viewport
@@ -63,9 +65,12 @@ def make_cam_frsutum_mesh():
     bpy.ops.mesh.merge(type="CENTER")
 
     # turn off edit mode
-    bpy.ops.object.editmode_toggle()
+    # bpy.ops.object.editmode_toggle()
+    bpy.ops.object.mode_set(mode="OBJECT")
 
     # now there should be a mesh the same shape as the camera object
     # the new mesh can be scaled to see the camera frustum at a longer distance
 
     bpy.ops.transform.resize(value=(50, 50, 50))
+
+    return cam_frustum_mesh

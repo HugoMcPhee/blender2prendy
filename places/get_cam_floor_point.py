@@ -55,7 +55,7 @@ def get_ray_point_for_object(direction, from_point, the_object, max_distance=200
         return ray_world_position
 
 
-def get_cam_floor_point(context, camera):
+def get_cam_floor_point(camera):
 
     # loop through all the floors , and get the ray
     # get_ray_point_for_object(direction, from point)   #hopefully converting global to local position works for any points
@@ -65,11 +65,8 @@ def get_cam_floor_point(context, camera):
     #  if not, use the 15 meters infront of the camera directly thing
 
     # make sure you have a Camera and an Empty named like this
-    scene = context.scene
-    camera = bpy.data.objects["Camera"]
-    empty = bpy.data.objects["Empty"]
-    empty2 = bpy.data.objects["Empty2"]
-    selected_object = context.active_object
+    # empty = bpy.data.objects["Empty"]
+    # empty2 = bpy.data.objects["Empty2"]
     collections = get_collections()
 
     cam_direction = camera.matrix_world.to_quaternion() @ Vector((0.0, 0.0, -1.0))
@@ -93,11 +90,11 @@ def get_cam_floor_point(context, camera):
             else:
                 print("Found a point!")
                 found_point = floor_found_point
-                empty.location = found_point
+                # empty.location = found_point
 
     if found_point is not None:
         print("Found atleast a point!")
-        empty.location = found_point
+        # empty.location = found_point
     else:
         print("Didn't find any first points!")
 
@@ -106,7 +103,7 @@ def get_cam_floor_point(context, camera):
         )
         # move the point to the same height as the camera (so its infront but at the same height)
         new_point_location_edited.z = camera.location.z
-        empty2.location = new_point_location_edited
+        # empty2.location = new_point_location_edited
 
         down_vector = Vector((0, 0, -1))
 
@@ -135,8 +132,8 @@ def get_cam_floor_point(context, camera):
     else:
         print("Found atleast a point!")
 
-    empty.location = found_point
-
+    # empty.location = found_point
+    return found_point
     # another way to get a vector
     # direction = mod.location - camera.location;
     # direction.normalize()

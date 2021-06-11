@@ -1,5 +1,5 @@
 from .get_cam_floor_point import get_cam_floor_point
-from .make_cam_frustum_mesh import make_cam_frsutum_mesh
+from .make_cam_frustum_mesh import make_cam_frustum_mesh
 from .combine_videos import combine_videos
 from .custom_render_video import custom_render_video
 import bpy
@@ -10,6 +10,7 @@ from collections import namedtuple
 from ..dump import dump
 from .save_typescript_files import save_typescript_files
 from ..get_things import get_scene, get_collections, get_view_layer
+from .make_camcube import make_camcube
 
 
 # custom ui imports
@@ -1032,7 +1033,7 @@ class RenderTools_Operator_MakeCamFrustumMesh(Operator):
     def execute(self, context):
         scene = context.scene
         mytool = scene.my_tool  # to use properties set in the ui
-        make_cam_frsutum_mesh()
+        make_cam_frustum_mesh(scene.camera)
         return {"FINISHED"}
 
 
@@ -1046,7 +1047,21 @@ class RenderTools_Operator_CheckCamFloorPoint(Operator):
 
     def execute(self, context):
         scene = context.scene
-        get_cam_floor_point(context, bpy.data.objects["Camera"])
+        get_cam_floor_point(scene.camera)
+        return {"FINISHED"}
+
+
+class RenderTools_Operator_MakeCameraCube(Operator):
+    bl_label = "Make Camera Cube"
+    bl_idname = "wm.make_camera_cube"
+
+    # @classmethod
+    # def poll(cls, context):
+    #     return context.active_object is not None
+
+    def execute(self, context):
+        scene = context.scene
+        make_camcube(scene.camera)
         return {"FINISHED"}
 
 
@@ -1088,6 +1103,11 @@ class RenderTools_Panel(Panel):
         layout.operator(
             "wm.make_check_camera_floor_point",
             text="Make Check Camera Floor Point",
+            icon="VIEW_CAMERA",
+        )
+        layout.operator(
+            "wm.make_camera_cube",
+            text="Make Camera Cube",
             icon="VIEW_CAMERA",
         )
 
@@ -1199,6 +1219,7 @@ classes = (
     RenderTools_Panel,
     SegmentTogglePanel,
     HiddenToCamTogglePanel,
+    RenderTools_Operator_MakeCameraCube,
 )
 
 
