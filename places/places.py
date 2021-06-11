@@ -242,6 +242,9 @@ def update_items_and_variables():
         looped_collection.name = looped_collection.name.replace(".", "_")
         looped_collection.name = looped_collection.name.replace(" ", "_")
 
+        this_cam_has_a_cambox = False
+        found_main_camera = None
+
         camera_names.append(looped_collection.name)
         child_camBox_counter = 1
         for looped_child_object in looped_collection.objects:
@@ -252,12 +255,16 @@ def update_items_and_variables():
                 # rename the camera object and the camera
                 looped_child_object.name = looped_collection.name
                 looped_child_object.data.name = looped_collection.name
+                found_main_camera = looped_child_object
             elif not (looped_child_object.type == "CAMERA"):
                 looped_child_object.name = (
                     f"camBox_{looped_collection.name}.{str(child_camBox_counter)}"
                 )
-
+                this_cam_has_a_cambox = True
                 child_camBox_counter += 1
+
+        if not this_cam_has_a_cambox:
+            make_camcube(found_main_camera)
 
     # Rename walls
     child_wall_counter = 1
