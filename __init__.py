@@ -24,15 +24,18 @@ bl_info = {
 
 from .models import models
 from .places import places
+from .quick_cam_switch import register_quick_cam_switch, unregister_quick_cam_switch
 
 
 def register():
     print("registerrigngngn")
     models.register_models()
     places.register_places()
+    register_quick_cam_switch()
 
 
 def unregister():
     print("unregisterrigngn")
     models.unregister_models()
     places.unregister_places()
+    unregister_quick_cam_switch()

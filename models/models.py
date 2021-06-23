@@ -30,7 +30,8 @@ class WM_OT_SetupModel(Operator):
 
     def execute(self, context):
         setup_model()
-        return {"setting up model done :) 🌷"}
+        print("setting up done :) 🌷")
+        return {"FINISHED"}
 
 
 class WM_OT_ExportModel(Operator):
@@ -39,7 +40,8 @@ class WM_OT_ExportModel(Operator):
 
     def execute(self, context):
         export_model()
-        return {"exorting model done :) 🌷"}
+        print("exporting model done :) 🌷")
+        return {"FINISHED"}
 
 
 # ------------------------------------------------------------------------

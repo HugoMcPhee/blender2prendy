@@ -1,9 +1,15 @@
+from .convert_exportable_curves import (
+    convert_floor_curves,
+    convert_wall_curves,
+    delete_meshes,
+)
 from .get_cam_floor_point import get_cam_floor_point
 from .make_cam_frustum_mesh import make_cam_frustum_mesh
 from .combine_videos import combine_videos
 from .custom_render_video import custom_render_video
 import bpy
 import os
+import subprocess
 from math import radians
 from mathutils import Euler, Vector
 from collections import namedtuple
@@ -57,6 +63,12 @@ def add_collection_to_exportable_collection(new_name):
 
     if new_name not in collections["Exportable"].children:
         collections["Exportable"].children.link(collections.new(new_name))
+
+
+def add_collection_to_cameras(new_name):
+    collections = get_collections()
+    if new_name not in collections["cameras"].children:
+        collections["cameras"].children.link(collections.new(new_name))
 
 
 def isStartName(name):
@@ -235,10 +247,23 @@ def update_items_and_variables():
                 if looped_place_has_index_file:
                     place_names.append(entry.name)
 
+    # turn camera objects into collections if theyre only objects
+    for looped_object in collections["cameras"].objects:
+
+        if looped_object.type == "CAMERA" and not looped_object.data.type == "PANO":
+            add_collection_to_cameras(looped_object.name)
+            # select the looped camera
+            bpy.context.view_layer.objects.active = looped_object
+            # Remove selected objects from all collections
+            # bpy.ops.collection.objects_remove_all()
+            looped_object.users_collection[0].objects.unlink(looped_object)
+            # move the new camcube to the cameras collection
+            collections[looped_object.name].objects.link(looped_object)
+
     # Rename camera objects if in a collection
 
     for looped_collection in collections["cameras"].children:
-        # print(f"looped_collection.name{looped_collection.name}")
+        print(f"looped_collection.name{looped_collection.name}")
         looped_collection.name = looped_collection.name.replace(".", "_")
         looped_collection.name = looped_collection.name.replace(" ", "_")
 
@@ -266,19 +291,38 @@ def update_items_and_variables():
         if not this_cam_has_a_cambox:
             make_camcube(found_main_camera)
 
+        # cam_objects = [
+        #     ob for ob in scene.objects if ob.type == "CAMERA" and ob.data.type != "PANO"
+        # ]
+
+        for looped_child_object in looped_collection.objects:
+            if looped_child_object.type == "MESH":
+                looped_child_object.display_type = "WIRE"
+                looped_child_object.cycles_visibility.camera = True
+                looped_child_object.cycles_visibility.camera = False
+                looped_child_object.cycles_visibility.diffuse = False
+                looped_child_object.cycles_visibility.glossy = False
+                looped_child_object.cycles_visibility.transmission = False
+                looped_child_object.cycles_visibility.scatter = False
+                looped_child_object.cycles_visibility.shadow = False
+
     # Rename walls
     child_wall_counter = 1
     for looped_object in collections["walls"].objects:
-        if looped_object.type == "MESH":
-            looped_object.name = "wall" + "_" + str(child_wall_counter)
+        if looped_object.type == "MESH" or looped_object.type == "CURVE":
+            looped_object.name = looped_object.name.replace(".", "_")
+            looped_object.name = looped_object.name.replace(" ", "_")
+            # looped_object.name = "wall" + "_" + str(child_wall_counter)
             wall_names.append(looped_object.name)
             child_wall_counter += 1
 
     # Rename floors
     child_floor_counter = 1
     for looped_object in collections["floors"].objects:
-        if looped_object.type == "MESH":
-            looped_object.name = "floor" + "_" + str(child_floor_counter)
+        if looped_object.type == "MESH" or looped_object.type == "CURVE":
+            looped_object.name = looped_object.name.replace(".", "_")
+            looped_object.name = looped_object.name.replace(" ", "_")
+            # looped_object.name = "floor" + "_" + str(child_floor_counter)
             floor_names.append(looped_object.name)
             child_floor_counter += 1
 
@@ -352,6 +396,9 @@ def update_items_and_variables():
     # print("hidden to cams toggles")
 
     default_segments_toggled = map(isStartName, segments_order)
+    print("________________________")
+    print("default_segments_toggled")
+    dump(default_segments_toggled)
     bpy.types.Object.segment_toggles = BoolVectorProperty(
         size=len(segments_order), default=default_segments_toggled
     )
@@ -377,9 +424,11 @@ def update_items_and_variables():
     # print("________________________________")
 
     # Add hidden to cams toggles prop to meshes in "Details" collection ------------------
-    default_hidden_to_cams_toggled = map(justReturnFalse, camera_names)
+    limited_camera_names = camera_names[:32]
+
+    default_hidden_to_cams_toggled = map(justReturnFalse, limited_camera_names)
     bpy.types.Object.hidden_to_cam_toggles = BoolVectorProperty(
-        size=len(camera_names), default=default_hidden_to_cams_toggled
+        size=len(limited_camera_names), default=default_hidden_to_cams_toggled
     )
 
     def do_for_each_child(looped_child_item):
@@ -394,9 +443,9 @@ def update_items_and_variables():
                 mesh_object = looped_child_object
                 #
                 hidden_cams_names_for_mesh = []
-                for camera_name in camera_names:
+                for camera_name in limited_camera_names:
                     should_hide_for_cam = mesh_object.hidden_to_cam_toggles[
-                        camera_names.index(camera_name)
+                        limited_camera_names.index(camera_name)
                     ]
                     if should_hide_for_cam:
                         hidden_cams_names_for_mesh.append(camera_name)
@@ -730,7 +779,10 @@ def setup_place(the_render_quality, the_framerate):
 
 
 def clean_and_render_place(
-    should_rerender, should_overwrite_render, the_best_lighting_frame
+    should_rerender,
+    should_overwrite_render,
+    should_convert_probes,
+    the_best_lighting_frame,
 ):
     scene = get_scene()
     collections = get_collections()
@@ -742,6 +794,10 @@ def clean_and_render_place(
 
     collection_to_include = collections["Exportable"]
     include_only_one_collection(view_layer, collection_to_include)
+
+    #
+    temporary_wall_meshes_to_export = convert_wall_curves()
+    temporary_floor_meshes_to_export = convert_floor_curves()
 
     #  deselect currently selected
     for ob in bpy.context.selected_objects:
@@ -758,6 +814,9 @@ def clean_and_render_place(
         filepath=parent_folder_path + os.sep + this_place_name + ".glb",
         use_selection=True,
     )
+
+    delete_meshes(temporary_wall_meshes_to_export)
+    delete_meshes(temporary_floor_meshes_to_export)
 
     # Change active collection To Details
     collection_to_include = collections["Details"]
@@ -930,6 +989,20 @@ def clean_and_render_place(
         spot_names,
         soundspot_names,
     )
+    print("done :) ✨, converting probes ")
+    convertProbesCommand = f"{parent_folder_path}"
+
+    # subprocess.run(
+    #     "npx github:HugoMcPhee/hdr-to-babylon-env 128", cwd=parent_folder_path
+    # )
+    if should_convert_probes:
+        subprocess.call(
+            f"cd {parent_folder_path} && npx github:HugoMcPhee/hdr-to-babylon-env 128",
+            shell=True,
+        )
+
+    print("delete frames")
+
     print("all done :)")
 
 
@@ -961,6 +1034,11 @@ class RenderTools_Properties(PropertyGroup):
     should_overwrite_render: BoolProperty(
         name="Overwrite renders",
         description="If false, only missing videos / hdr images are rendered",
+        default=False,
+    )
+    should_convert_probes: BoolProperty(
+        name="Convert probes",
+        description="Convert the .hdr to .ennv for babylonjs",
         default=False,
     )
 
@@ -1028,6 +1106,7 @@ class RenderTools_Operator_RenderVideos(Operator):
         clean_and_render_place(
             mytool.should_rerender,
             mytool.should_overwrite_render,
+            mytool.should_convert_probes,
             mytool.the_best_lighting_frame,
         )
         return {"FINISHED"}
@@ -1072,6 +1151,21 @@ class RenderTools_Operator_MakeCameraCube(Operator):
         return {"FINISHED"}
 
 
+class RenderTools_Operator_TryNewScript(Operator):
+    bl_label = "Try New Script"
+    bl_idname = "wm.try_new_script"
+
+    # @classmethod
+    # def poll(cls, context):
+    #     return context.active_object is not None
+
+    def execute(self, context):
+        scene = context.scene
+        print("test")
+        # convert_wall_curves(scene.camera)
+        return {"FINISHED"}
+
+
 # ------------------------------------------------------------------------
 #    Panel in Object Mode
 # ------------------------------------------------------------------------
@@ -1094,6 +1188,7 @@ class RenderTools_Panel(Panel):
         layout.operator("wm.render_videos", text="Make Place", icon="SCENE")
         layout.prop(mytool, "should_rerender")
         layout.prop(mytool, "should_overwrite_render")
+        layout.prop(mytool, "should_convert_probes")
         layout.separator()
         layout.prop(mytool, "my_framerate_enum")
         layout.prop(mytool, "the_render_quality")
@@ -1116,6 +1211,11 @@ class RenderTools_Panel(Panel):
             "wm.make_camera_cube",
             text="Make Camera Cube",
             icon="VIEW_CAMERA",
+        )
+        layout.operator(
+            "wm.try_new_script",
+            text="Try New Script",
+            icon="OUTLINER_OB_GREASEPENCIL",
         )
 
 
@@ -1227,6 +1327,7 @@ classes = (
     SegmentTogglePanel,
     HiddenToCamTogglePanel,
     RenderTools_Operator_MakeCameraCube,
+    RenderTools_Operator_TryNewScript,
 )
 
 
