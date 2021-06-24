@@ -2,6 +2,7 @@ from .convert_exportable_curves import (
     convert_floor_curves,
     convert_wall_curves,
     delete_meshes,
+    revert_curve_names,
 )
 from .get_cam_floor_point import get_cam_floor_point
 from .make_cam_frustum_mesh import make_cam_frustum_mesh
@@ -800,11 +801,19 @@ def clean_and_render_place(
     temporary_floor_meshes_to_export = convert_floor_curves()
 
     #  deselect currently selected
-    for ob in bpy.context.selected_objects:
-        ob.select_set(False)
+    for obj in bpy.context.selected_objects:
+        obj.select_set(False)
+
     # select only the exportable stuff
     for obj in collections["Exportable"].all_objects:
         obj.select_set(True)
+
+    # deselect all panoramic probe cameras
+    for obj in collections["cameras"].all_objects:
+        print(obj.name)
+        if obj.type == "CAMERA" and obj.data.type == "PANO":
+            obj.select_set(False)
+
     # Export gltf glb file
     bpy.ops.export_scene.gltf(
         export_format="GLB",
@@ -817,6 +826,9 @@ def clean_and_render_place(
 
     delete_meshes(temporary_wall_meshes_to_export)
     delete_meshes(temporary_floor_meshes_to_export)
+
+    revert_curve_names("walls")
+    revert_curve_names("floors")
 
     # Change active collection To Details
     collection_to_include = collections["Details"]
