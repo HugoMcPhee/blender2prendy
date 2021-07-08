@@ -49,12 +49,13 @@ def custom_render_video(
         f"{frame_image_path}{str(amount_of_frames_saved ).zfill(4)}.png",
     )
 
-    makeVideoCommand = f'C:\\ffmpeg -framerate {chosen_framerate} -f image2 -i "{frame_image_path}%04d.png" -vcodec libx264 -crf {video_quality} -g {keyframes} -vf "fps={chosen_framerate},format=yuv420p,scale=1280:720" -y -movflags faststart "{video_output_path}.mp4"'
+    makeVideoCommand = f'C:\\ffmpeg -framerate {chosen_framerate} -f image2 -i "{frame_image_path}%04d.png" -vcodec libx264 -crf {video_quality} -g {keyframes} -vf "fps={chosen_framerate},format=yuv420p,scale=1280:720" -y -movflags faststart "{video_output_path}.mp4" -hide_banner -loglevel error'
     # -movflags faststart is for starting video fast on web?
     # NOTE -g might be depricated soon?
 
-    print("launching ffmpeg")
+    # print("launching ffmpeg")
+    print("making video from frames")
     subprocess.run(makeVideoCommand)
-    print("delete frames")
+    # print("delete frames")
     # delete frame images
     shutil.rmtree(frame_image_folder_path)

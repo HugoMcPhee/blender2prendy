@@ -264,7 +264,7 @@ def update_items_and_variables():
     # Rename camera objects if in a collection
 
     for looped_collection in collections["cameras"].children:
-        print(f"looped_collection.name{looped_collection.name}")
+        # print(f"looped_collection.name{looped_collection.name}")
         looped_collection.name = looped_collection.name.replace(".", "_")
         looped_collection.name = looped_collection.name.replace(" ", "_")
 
@@ -397,9 +397,9 @@ def update_items_and_variables():
     # print("hidden to cams toggles")
 
     default_segments_toggled = map(isStartName, segments_order)
-    print("________________________")
-    print("default_segments_toggled")
-    dump(default_segments_toggled)
+    # print("________________________")
+    # print("default_segments_toggled")
+    # dump(default_segments_toggled)
     bpy.types.Object.segment_toggles = BoolVectorProperty(
         size=len(segments_order), default=default_segments_toggled
     )
@@ -810,7 +810,7 @@ def clean_and_render_place(
 
     # deselect all panoramic probe cameras
     for obj in collections["cameras"].all_objects:
-        print(obj.name)
+        # print(obj.name)
         if obj.type == "CAMERA" and obj.data.type == "PANO":
             obj.select_set(False)
 
@@ -847,7 +847,6 @@ def clean_and_render_place(
                 else:
                     camera_object = looped_object
 
-        print(f"Set camera {looped_object.name}")
 
         render_output_path_start = f"{parent_folder_path}{os.sep}{cam_collection.name}"
         probe_output_path = f"{render_output_path_start}_probe.hdr"
@@ -865,6 +864,7 @@ def clean_and_render_place(
         segment_names_for_cam = segments_for_cams[camera_object.name]
 
         if should_rerender:
+            print(f"Set camera {looped_object.name}")
             reenable_all_meshes()
             # render probe
             if not os.path.isfile(probe_output_path) or should_overwrite_render:
