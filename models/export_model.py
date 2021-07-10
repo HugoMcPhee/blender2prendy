@@ -112,8 +112,10 @@ def export_model():
         file.write("export const animationNames = [")
         for looped_name in animation_names:
             file.write(f'\n  "{ looped_name}",')
-        file.write("\n] as const;\n\n")
-
+        if len(animation_names) > 0:
+            file.write("\n] as const;\n\n")
+        else:
+            file.write("\n] as never;\n\n")
         # boneNames array
         file.write("export const boneNames = [")
         for looped_name in bone_names:
