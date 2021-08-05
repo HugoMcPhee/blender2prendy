@@ -91,7 +91,7 @@ def export_model():
     bpy.ops.export_scene.gltf(
         export_format="GLB",
         export_cameras=True,
-        export_apply=False,
+        export_apply=True,
         export_animations=True,
         export_lights=False,
         use_selection=True,

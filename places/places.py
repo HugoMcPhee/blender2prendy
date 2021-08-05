@@ -1,3 +1,4 @@
+from .collection_instances import focus_instance
 from .convert_exportable_curves import (
     convert_floor_curves,
     convert_wall_curves,
@@ -797,7 +798,7 @@ def clean_and_render_place(
     include_only_one_collection(view_layer, collection_to_include)
 
     #
-    temporary_wall_meshes_to_export = convert_wall_curves()
+    # temporary_wall_meshes_to_export = convert_wall_curves()
     temporary_floor_meshes_to_export = convert_floor_curves()
 
     #  deselect currently selected
@@ -818,16 +819,16 @@ def clean_and_render_place(
     bpy.ops.export_scene.gltf(
         export_format="GLB",
         export_cameras=True,
-        export_apply=False,
+        export_apply=True,
         export_animations=True,
         filepath=parent_folder_path + os.sep + this_place_name + ".glb",
         use_selection=True,
     )
 
-    delete_meshes(temporary_wall_meshes_to_export)
+    # delete_meshes(temporary_wall_meshes_to_export)
     delete_meshes(temporary_floor_meshes_to_export)
 
-    revert_curve_names("walls")
+    # revert_curve_names("walls")
     revert_curve_names("floors")
 
     # Change active collection To Details
@@ -846,7 +847,6 @@ def clean_and_render_place(
                     probe_object = looped_object
                 else:
                     camera_object = looped_object
-
 
         render_output_path_start = f"{parent_folder_path}{os.sep}{cam_collection.name}"
         probe_output_path = f"{render_output_path_start}_probe.hdr"
@@ -1174,6 +1174,7 @@ class RenderTools_Operator_TryNewScript(Operator):
     def execute(self, context):
         scene = context.scene
         print("test")
+        focus_instance()
         # convert_wall_curves(scene.camera)
         return {"FINISHED"}
 
