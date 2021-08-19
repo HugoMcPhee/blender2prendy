@@ -26,6 +26,7 @@ def make_camcube(camera):
     )
     print("got to here")
     temp_flat_cube = bpy.context.active_object
+
     temp_flat_cube.name = "camBox_auto"
     bpy.ops.object.mode_set(mode="EDIT")
 
@@ -41,6 +42,7 @@ def make_camcube(camera):
             "constraint_axis": (False, False, True),
         },
     )
+
     #  exit edit mode
     bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -64,7 +66,6 @@ def make_camcube(camera):
     #     value=(0.9, 0.9, 1),
     #     orient_type="LOCAL",
     # )
-
     # deselect eveything
     bpy.ops.object.select_all(action="DESELECT")
     #  do the boolean intersection with both and name the new one camcube_auto_camName
@@ -84,7 +85,6 @@ def make_camcube(camera):
     # bpy.ops.transform.resize(value=(1Z, 1, 500))
 
     # move it to the same collection as the camera
-
     # Remove selected objects from all collections
     bpy.ops.collection.objects_remove_all()
     # move the new camcube to the cameras collection

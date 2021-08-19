@@ -52,6 +52,17 @@ def include_only_one_collection(
             layer_collection.exclude = False
 
 
+def enable_all_child_collections(collection_to_include_name: bpy.types.StringProperty):
+    view_layer = get_view_layer()
+
+    # NOTE HAVE to loop through view_layer ?? , can't loop through collection.children ohwell
+    for collection in view_layer.layer_collection.children[
+        collection_to_include_name
+    ].children:
+        print(collection.name)
+        collection.exclude = False
+
+
 def add_collection_to_scene(new_name):
     scene = get_scene()
     collections = get_collections()
@@ -300,13 +311,13 @@ def update_items_and_variables():
         for looped_child_object in looped_collection.objects:
             if looped_child_object.type == "MESH":
                 looped_child_object.display_type = "WIRE"
-                looped_child_object.cycles_visibility.camera = True
-                looped_child_object.cycles_visibility.camera = False
-                looped_child_object.cycles_visibility.diffuse = False
-                looped_child_object.cycles_visibility.glossy = False
-                looped_child_object.cycles_visibility.transmission = False
-                looped_child_object.cycles_visibility.scatter = False
-                looped_child_object.cycles_visibility.shadow = False
+                looped_child_object.visible_camera = True
+                looped_child_object.visible_camera = False
+                looped_child_object.visible_diffuse = False
+                looped_child_object.visible_glossy = False
+                looped_child_object.visible_transmission = False
+                looped_child_object.visible_volume_scatter = False
+                looped_child_object.visible_shadow = False
 
     # Rename walls
     child_wall_counter = 1
@@ -519,6 +530,15 @@ def toggle_world_volume(isToggled=True):
         input_to_change.default_value = 0
 
 
+def toggle_depth_hidden_objects(isToggled=True):
+    view_layer = get_view_layer()
+    # NOTE HAVE to loop through view_layer ?? , can't loop through collection.children ohwell
+    for collection in view_layer.layer_collection.children["Details"].children:
+        if collection.name == "hidden_to_depth":
+            print(collection.name)
+            collection.exclude = not isToggled
+
+
 # not needed! might help if stopping "make videos" before it finshed
 def reenable_all_meshes():
     global meshnames_that_were_disabled_in_render
@@ -527,7 +547,7 @@ def reenable_all_meshes():
         for mesh_name in hidden_meshes_for_cams[cam_name]:
             mesh_object = bpy.data.objects[mesh_name]
             mesh_object.hide_render = False
-            mesh_object.cycles_visibility.camera = True
+            mesh_object.visible_camera = True
 
 
 def reenable_hidden_meshes():
@@ -535,7 +555,7 @@ def reenable_hidden_meshes():
     # re-enable previously hidden meshes
     for mesh_name in meshnames_that_were_disabled_in_render:
         mesh_object = bpy.data.objects[mesh_name]
-        mesh_object.cycles_visibility.camera = True
+        mesh_object.visible_camera = True
         mesh_object.hide_render = False
     meshnames_that_were_disabled_in_render = []
 
@@ -551,7 +571,7 @@ def hide_meshes_for_camera(cam_name, isDepth=False):
             if isDepth:
                 mesh_object.hide_render = True
             else:
-                mesh_object.cycles_visibility.camera = False
+                mesh_object.visible_camera = False
             meshnames_that_were_disabled_in_render.append(mesh_name)
         else:
             print(f"{cam_name} has no hidden meshes :)")
@@ -618,9 +638,10 @@ def setup_camera_probes():
 
 
 def setup_place(the_render_quality, the_framerate):
-    update_items_and_variables()
-
     scene = get_scene()
+
+    enable_all_child_collections("Exportable")
+    update_items_and_variables()
 
     # -------------------------------------------------
     # Set up options
@@ -630,6 +651,7 @@ def setup_place(the_render_quality, the_framerate):
     bpy.context.view_layer.cycles.denoising_store_passes = True
     scene.cycles.denoiser = "OPENIMAGEDENOISE"
     scene.render.use_motion_blur = True
+    scene.cycles.use_denoising = True
 
     scene.render.fps = scene_framerate
 
@@ -643,7 +665,6 @@ def setup_place(the_render_quality, the_framerate):
     # -------------------------------------------------
     # Add collections if they're not there
     # -------------------------------------------------
-
     add_collection_to_scene("Exportable")
     add_collection_to_exportable_collection("walls")
     add_collection_to_exportable_collection("triggers")
@@ -651,8 +672,11 @@ def setup_place(the_render_quality, the_framerate):
     add_collection_to_exportable_collection("floors")
     add_collection_to_exportable_collection("spots")
     add_collection_to_scene("Details")
-
+    print("got to here 4")
     setup_camera_probes()
+    print("got to here 5")
+
+    #  Note crashes somehwere after here ----------------------------------------------
 
     # -------------------------------------------------
     # Adding compositing nodes
@@ -665,9 +689,12 @@ def setup_place(the_render_quality, the_framerate):
     # clear default nodes
     for node in tree.nodes:
         tree.nodes.remove(node)
-
     # create RenderLayers node
+    # ISSUE HERE
+    # CompositorNodeRLayers crashes blender
+    # but the default denoise might be fine so will try that
     render_layers_node = tree.nodes.new(type="CompositorNodeRLayers")
+
     # image_node.image = bpy.data.images['YOUR_IMAGE_NAME']
     render_layers_node.location = 0, 0
 
@@ -693,7 +720,6 @@ def setup_place(the_render_quality, the_framerate):
     # create output node
     comp_node = tree.nodes.new("CompositorNodeComposite")
     comp_node.location = 900, 0
-
     # link nodes
     links = tree.links
     # depth to subtract , subtract to divide, divide to depth toggle switch
@@ -706,7 +732,10 @@ def setup_place(the_render_quality, the_framerate):
     links.new(render_layers_node.outputs[5], denoise_node.inputs[2])
 
     # link denoiser to switch
-    links.new(denoise_node.outputs[0], switch_node.inputs[0])
+    # links.new(denoise_node.outputs[0], switch_node.inputs[0])
+
+    # link rendered image to switch
+    links.new(render_layers_node.outputs[0], switch_node.inputs[0])
 
     # link switch to output
     links.new(switch_node.outputs[0], comp_node.inputs[0])
@@ -768,9 +797,10 @@ def setup_place(the_render_quality, the_framerate):
     # '"sRGB"', '"Raw"'
     add_depth_switch_driver(scene, "sequencer_colorspace_settings.name", 11.0, 10.0)
     add_depth_switch_driver(tree.nodes["Denoise"], "mute", False, True)
-
+    print("got to here 7")
     # Set options for video rendering (now that the nodes are created)
     setup_video_rendering()
+    print("got to here 8")
 
 
 # -----------------------------------------------------------------------------------------
@@ -910,6 +940,7 @@ def clean_and_render_place(
                     # toggle the depth toggle off
                     scene.node_tree.nodes["Switch"].check = False
                     toggle_world_volume(True)
+                    toggle_depth_hidden_objects(True)
 
                     reenable_hidden_meshes()
                     hide_meshes_for_camera(camera_object.name, False)
@@ -953,6 +984,7 @@ def clean_and_render_place(
                     scene.node_tree.nodes["Switch"].check = True
                     scene.camera = camera_object
                     toggle_world_volume(False)
+                    toggle_depth_hidden_objects(False)
 
                     reenable_hidden_meshes()
                     hide_meshes_for_camera(camera_object.name, True)
