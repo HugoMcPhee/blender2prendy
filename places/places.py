@@ -356,11 +356,14 @@ def update_items_and_variables():
 
     # Collect segment names and times
 
-    has_marker_at_zero = False
+    has_start_marker = False
+
+    # check if it also doesnt already have a start frame
+
     for m in scene.timeline_markers:
-        if m.frame == 0:
-            has_marker_at_zero = True
-    if not has_marker_at_zero:
+        if m.frame == 0 or m.name == "start":
+            has_start_marker = True
+    if not has_start_marker:
         new_first_marker = scene.timeline_markers.new("start", frame=0)
 
     SimpleMarker = namedtuple("SimpleMarker", ["name", "frame"])
