@@ -222,10 +222,10 @@ def update_items_and_variables():
     hidden_to_cams_for_meshes = {}
     hidden_meshes_for_cams = {}
 
-    total_frames = scene.frame_end - scene.frame_start
-    total_time = total_frames / scene_framerate
-    chosen_framerate = scene_framerate / scene.frame_step
-    one_frame_time = 1 / chosen_framerate
+    # total_frames = scene.frame_end - scene.frame_start
+    # total_time = total_frames / scene_framerate
+    # chosen_framerate = scene_framerate / scene.frame_step
+    # one_frame_time = 1 / chosen_framerate
 
     #  Get the first and last frames https://blender.stackexchange.com/a/28007
     first_frame = 9999
@@ -237,6 +237,11 @@ def update_items_and_variables():
         if action.frame_range[0] < first_frame:
             first_frame = action.frame_range[0]
 
+    # use the start marker as the frame start if it's there
+    for m in scene.timeline_markers:
+        if m.frame == 0 or m.name == "start":
+            first_frame = m.frame
+
     scene.frame_start = first_frame
     scene.frame_end = last_frame
 
@@ -244,6 +249,8 @@ def update_items_and_variables():
     total_time = total_frames / scene_framerate
     chosen_framerate = scene_framerate / scene.frame_step
     one_frame_time = 1 / chosen_framerate
+    print("one_frame_time")
+    print(one_frame_time)
 
     # Get place names from folder names (folders with index files)
     with os.scandir(grandparent_folder_path) as it:
@@ -376,19 +383,23 @@ def update_items_and_variables():
     # loop through all the markers
     current_marker_index = 0
     for m in sorted_markers:
-        marker_time = m.frame / scene.render.fps
+        marker_time = (m.frame - scene.frame_start) / scene.render.fps
         next_marker_time = 0
         next_marker_frame = 0
         next_marker_index = current_marker_index + 1
 
         if len(sorted_markers) > next_marker_index:
             next_marker = sorted_markers[current_marker_index + 1]
-            next_marker_time = next_marker.frame / scene.render.fps
+            next_marker_time = (
+                next_marker.frame - scene.frame_start
+            ) / scene.render.fps
             next_marker_frame = next_marker.frame
         else:
-            next_marker_time = scene.frame_end / scene.render.fps
+            next_marker_time = (scene.frame_end - scene.frame_start) / scene.render.fps
             next_marker_frame = scene.frame_end
+
         # print(f"marker_time:{marker_time} next_marker_time: {next_marker_time}")
+        print(f"marker_time:{marker_time} next_marker_time: {next_marker_time}")
         marker_duration = next_marker_time - marker_time
 
         edited_name = m.name

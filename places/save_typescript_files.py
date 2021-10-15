@@ -45,7 +45,12 @@ def save_typescript_files(
         file.write("};\n")
 
         # segmentTimesByCamera
-        total_time_counted = 0
+        # first_segment_name = segments_for_cams[cam_name]
+        # first_segment_info = segments_info[first_segment_name]
+        # first_segment_time = first_segment_info.time
+        # total_time_counted = first_segment_info.time # start counting total time from 0?
+        total_time_counted = 0  # start counting total time from 0, since the video starts at 0 (even if it starts at a differnt frame)
+
         cam_counter = 0
         file.write("export const segmentTimesByCamera = {\n")
         for cam_name in camera_names:
