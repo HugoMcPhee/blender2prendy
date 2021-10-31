@@ -136,6 +136,9 @@ hidden_meshes_for_cams = {}  # { camName: meshNames[] }
 
 meshnames_that_were_disabled_in_render = []
 
+# bpy.data.worlds["World"].node_tree.nodes["Volume Scatter"].inputs[0].default_value
+original_world_volume_color = ""
+
 
 # total_frames = scene.frame_end - scene.frame_start
 total_frames = 1 - 1
@@ -528,20 +531,34 @@ def setup_video_rendering():
     scene.render.ffmpeg.gopsize = 4
     scene.node_tree.nodes["Denoise"].use_hdr = True
 
+    # for faster performance
+    scene.render.use_persistent_data = True
+
 
 def toggle_world_volume(isToggled=True):
+    global original_world_volume_color
 
     world_nodes = bpy.data.worlds["World"].node_tree.nodes
 
-    if not "Principled Volume" in world_nodes:
+    volume_inputs = []
+
+    if "Principled Volume" in world_nodes:
+        volume_inputs = world_nodes["Principled Volume"].inputs
+    elif "Volume Scatter" in world_nodes:
+        volume_inputs = world_nodes["Volume Scatter"].inputs
+    else:
         return
-    input_to_change = world_nodes["Principled Volume"].inputs[2]
+
+    density_input = volume_inputs[2]
+    volume_color_input = volume_inputs[0]
 
     if isToggled:
-        input_to_change.default_value = 0.0013
-        # input_to_change.default_value = 0.000
+        density_input.default_value = 0.0013
+        volume_color_input.default_value = original_world_volume_color
     else:
-        input_to_change.default_value = 0
+        density_input.default_value = 0
+        original_world_volume_color = volume_color_input.default_value
+        volume_color_input.default_value = (0, 0, 0, 1)
 
 
 def toggle_depth_hidden_objects(isToggled=True):
@@ -986,11 +1003,13 @@ def clean_and_render_place(
                     or should_overwrite_render
                 ):
 
+                    # originalClipStart = 0.1
+                    # originalClipEnd = 50
                     originalClipStart = scene.camera.data.clip_start
                     originalClipEnd = scene.camera.data.clip_end
 
                     # scene.camera.data.clip_start = 0.1
-                    # scene.camera.data.clip_end = 100
+                    # scene.camera.data.clip_end = 50
 
                     setup_video_rendering()
                     scene.camera = camera_object
