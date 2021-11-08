@@ -947,6 +947,8 @@ def clean_and_render_place(
             for segment_name in segment_names_for_cam:
                 print(f"rendering {segment_name}")
                 # customRenderVideo(camera_object.name, segment_name, "")
+                originalClipStart = scene.camera.data.clip_start
+                originalClipEnd = scene.camera.data.clip_end
 
                 # render color videos
                 if (
@@ -1005,8 +1007,8 @@ def clean_and_render_place(
 
                     # originalClipStart = 0.1
                     # originalClipEnd = 50
-                    originalClipStart = scene.camera.data.clip_start
-                    originalClipEnd = scene.camera.data.clip_end
+                    # originalClipStart = scene.camera.data.clip_start
+                    # originalClipEnd = scene.camera.data.clip_end
 
                     # scene.camera.data.clip_start = 0.1
                     # scene.camera.data.clip_end = 50
@@ -1034,8 +1036,8 @@ def clean_and_render_place(
 
                     reenable_hidden_meshes()
 
-                    scene.camera.data.clip_start = originalClipStart
-                    scene.camera.data.clip_end = originalClipEnd
+                    # scene.camera.data.clip_start = originalClipStart
+                    # scene.camera.data.clip_end = originalClipEnd
 
             # setup_probe_rendering
             reenable_all_meshes()

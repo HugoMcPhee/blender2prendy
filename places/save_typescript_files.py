@@ -25,8 +25,7 @@ def save_typescript_files(
         file.write(f'import modelFile from "./{this_place_name}.glb";\n\n')
 
         # Import videos
-        file.write(f'import colorVideoFile from "./color.mp4";\n')
-        file.write(f'import depthVideoFile from "./depth.mp4";\n')
+        file.write(f'import backdropVideoFile from "./backdrops.mp4";\n')
 
         # Import probes
         for looped_name in camera_names:
@@ -75,10 +74,7 @@ def save_typescript_files(
 
         # videoFiles
         file.write(
-            "export const videoFiles = {\n"
-            + "  color: colorVideoFile,\n"
-            + "  depth: depthVideoFile,\n"
-            + "}\n"
+            "export const videoFiles = {\n" + "  backdrop: backdropVideoFile,\n" + "}\n"
         )
 
         # Get the markers (sections)
