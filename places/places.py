@@ -59,7 +59,7 @@ def enable_all_child_collections(collection_to_include_name: bpy.types.StringPro
     for collection in view_layer.layer_collection.children[
         collection_to_include_name
     ].children:
-        print(collection.name)
+        # print(collection.name)
         collection.exclude = False
 
 
@@ -553,6 +553,8 @@ def toggle_world_volume(isToggled=True):
     volume_color_input = volume_inputs[0]
 
     if isToggled:
+        if not original_world_volume_color:
+            original_world_volume_color = volume_color_input.default_value
         density_input.default_value = 0.0013
         volume_color_input.default_value = original_world_volume_color
     else:
@@ -566,7 +568,6 @@ def toggle_depth_hidden_objects(isToggled=True):
     # NOTE HAVE to loop through view_layer ?? , can't loop through collection.children ohwell
     for collection in view_layer.layer_collection.children["Details"].children:
         if collection.name == "hidden_to_depth":
-            print(collection.name)
             collection.exclude = not isToggled
 
 
@@ -604,8 +605,8 @@ def hide_meshes_for_camera(cam_name, isDepth=False):
             else:
                 mesh_object.visible_camera = False
             meshnames_that_were_disabled_in_render.append(mesh_name)
-        else:
-            print(f"{cam_name} has no hidden meshes :)")
+    else:
+        print(f"{cam_name} has no hidden meshes :)")
 
 
 def setup_probe_rendering():
@@ -703,9 +704,7 @@ def setup_place(the_render_quality, the_framerate):
     add_collection_to_exportable_collection("floors")
     add_collection_to_exportable_collection("spots")
     add_collection_to_scene("Details")
-    print("got to here 4")
     setup_camera_probes()
-    print("got to here 5")
 
     #  Note crashes somehwere after here ----------------------------------------------
 
@@ -828,10 +827,8 @@ def setup_place(the_render_quality, the_framerate):
     # '"sRGB"', '"Raw"'
     add_depth_switch_driver(scene, "sequencer_colorspace_settings.name", 11.0, 10.0)
     add_depth_switch_driver(tree.nodes["Denoise"], "mute", False, True)
-    print("got to here 7")
     # Set options for video rendering (now that the nodes are created)
     setup_video_rendering()
-    print("got to here 8")
 
 
 # -----------------------------------------------------------------------------------------
