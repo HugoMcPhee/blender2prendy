@@ -270,6 +270,17 @@ def update_items_and_variables():
                 if looped_place_has_index_file:
                     place_names.append(entry.name)
 
+    # Create a default camera theres no cameras in Exportable/cameras
+    if (
+        len(collections["cameras"].objects) is 0
+        and len(collections["cameras"].children) is 0
+    ):
+        # create the first camera
+        new_cam = bpy.data.cameras.new("default camera")
+        new_cam.lens = 18
+        new_cam_object = bpy.data.objects.new("default camera", new_cam)
+        collections["cameras"].objects.link(new_cam_object)
+
     # turn camera objects into collections if theyre only objects
     for looped_object in collections["cameras"].objects:
 
@@ -385,6 +396,7 @@ def update_items_and_variables():
 
     # loop through all the markers
     current_marker_index = 0
+
     for m in sorted_markers:
         marker_time = (m.frame - scene.frame_start) / scene.render.fps
         next_marker_time = 0
@@ -429,9 +441,6 @@ def update_items_and_variables():
     # print("________________________")
     # print("default_segments_toggled")
     # dump(default_segments_toggled)
-    bpy.types.Object.segment_toggles = BoolVectorProperty(
-        size=len(segments_order), default=default_segments_toggled
-    )
 
     for looped_collection in collections["cameras"].children:
         for looped_child_object in looped_collection.objects:
@@ -450,6 +459,10 @@ def update_items_and_variables():
                         segment_names_for_cam.append(segment_name)
 
                 segments_for_cams[camera_object.name] = segment_names_for_cam
+
+    bpy.types.Object.segment_toggles = BoolVectorProperty(
+        size=len(segments_order), default=default_segments_toggled
+    )
 
     # print("________________________________")
 
@@ -672,6 +685,19 @@ def setup_camera_probes():
 def setup_place(the_render_quality, the_framerate):
     scene = get_scene()
 
+    # -------------------------------------------------
+    # Add collections if they're not there
+    # -------------------------------------------------
+    print("HEREEREER")
+    add_collection_to_scene("Exportable")
+    add_collection_to_exportable_collection("walls")
+    add_collection_to_exportable_collection("triggers")
+    add_collection_to_exportable_collection("cameras")
+    add_collection_to_exportable_collection("floors")
+    add_collection_to_exportable_collection("spots")
+    add_collection_to_exportable_collection("soundspots")
+    add_collection_to_scene("Details")
+
     enable_all_child_collections("Exportable")
     update_items_and_variables()
 
@@ -694,16 +720,6 @@ def setup_place(the_render_quality, the_framerate):
     # allow frame dropping in the viewport so the speed is right :)
     scene.sync_mode = "FRAME_DROP"
 
-    # -------------------------------------------------
-    # Add collections if they're not there
-    # -------------------------------------------------
-    add_collection_to_scene("Exportable")
-    add_collection_to_exportable_collection("walls")
-    add_collection_to_exportable_collection("triggers")
-    add_collection_to_exportable_collection("cameras")
-    add_collection_to_exportable_collection("floors")
-    add_collection_to_exportable_collection("spots")
-    add_collection_to_scene("Details")
     setup_camera_probes()
 
     #  Note crashes somehwere after here ----------------------------------------------
