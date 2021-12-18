@@ -442,6 +442,10 @@ def update_items_and_variables():
     # print("default_segments_toggled")
     # dump(default_segments_toggled)
 
+    bpy.types.Object.segment_toggles = BoolVectorProperty(
+        size=len(segments_order), default=default_segments_toggled
+    )
+
     for looped_collection in collections["cameras"].children:
         for looped_child_object in looped_collection.objects:
             if (
@@ -459,10 +463,6 @@ def update_items_and_variables():
                         segment_names_for_cam.append(segment_name)
 
                 segments_for_cams[camera_object.name] = segment_names_for_cam
-
-    bpy.types.Object.segment_toggles = BoolVectorProperty(
-        size=len(segments_order), default=default_segments_toggled
-    )
 
     # print("________________________________")
 
@@ -837,7 +837,8 @@ def setup_place(the_render_quality, the_framerate):
 
     # Add other drivers for depth stuff
     add_depth_switch_driver(scene, "cycles.samples", the_render_quality, 1)
-    add_depth_switch_driver(scene, "render.motion_blur_shutter", 0.5, 0.0)
+    # NOTE motion_blur_shutter should be 0 for depth, but it crashes with GPU Optix rendering in cycles x
+    add_depth_switch_driver(scene, "render.motion_blur_shutter", 0.5, 0.1)
     # '"Filmic"', '"Raw"'
     add_depth_switch_driver(scene, "view_settings.view_transform", 2.1, 4.1)
     # '"sRGB"', '"Raw"'
