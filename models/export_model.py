@@ -52,8 +52,8 @@ def export_model():
     material_names = []
     skeleton_name = "sdf"
 
-    # Loop through all objects
-    for looped_object in scene.objects:
+    # Loop through all selected objects
+    for looped_object in bpy.context.selected_objects:
 
         if looped_object.type == "MESH":
             mesh_names.append(looped_object.name)
@@ -68,10 +68,10 @@ def export_model():
         print(looped_action.name)
         print(looped_action.library)
         # https://blender.stackexchange.com/questions/52471/how-to-tell-if-an-object-is-linked-with-another-blend
-        if looped_action.library is None:
+        if looped_action.library is None and not looped_action.name.startswith("__"):
             animation_names.append(looped_action.name)
 
-    for looped_object in scene.objects:
+    for looped_object in bpy.context.selected_objects:
         #  material filtering from  https://github.com/KhronosGroup/glTF-Blender-IO
         for slot in looped_object.material_slots:
             if slot.material is None:
