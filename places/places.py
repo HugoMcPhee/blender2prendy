@@ -688,7 +688,7 @@ def setup_place(the_render_quality, the_framerate):
     # -------------------------------------------------
     # Add collections if they're not there
     # -------------------------------------------------
-    print("HEREEREER")
+    print("setting up place")
     add_collection_to_scene("Exportable")
     add_collection_to_exportable_collection("walls")
     add_collection_to_exportable_collection("triggers")
@@ -707,6 +707,7 @@ def setup_place(the_render_quality, the_framerate):
 
     scene.render.engine = "CYCLES"
     bpy.context.view_layer.cycles.denoising_store_passes = True
+    bpy.context.view_layer.use_pass_z = True
     scene.cycles.denoiser = "OPENIMAGEDENOISE"
     scene.render.use_motion_blur = True
     scene.cycles.use_denoising = True
