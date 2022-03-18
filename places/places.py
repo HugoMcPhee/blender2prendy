@@ -245,8 +245,8 @@ def update_items_and_variables():
         if m.frame == 0 or m.name == "start":
             first_frame = m.frame
 
-    scene.frame_start = first_frame
-    scene.frame_end = last_frame
+    scene.frame_start = int(first_frame)
+    scene.frame_end = int(last_frame)
 
     total_frames = scene.frame_end - scene.frame_start
     total_time = total_frames / scene_framerate
@@ -584,6 +584,14 @@ def toggle_depth_hidden_objects(isToggled=True):
             collection.exclude = not isToggled
 
 
+def toggle_depth_visible_objects(isToggled=True):
+    view_layer = get_view_layer()
+    # NOTE HAVE to loop through view_layer ?? , can't loop through collection.children ohwell
+    for collection in view_layer.layer_collection.children["Details"].children:
+        if collection.name == "visible_to_depth":
+            collection.exclude = not isToggled
+
+
 # not needed! might help if stopping "make videos" before it finshed
 def reenable_all_meshes():
     global meshnames_that_were_disabled_in_render
@@ -682,6 +690,22 @@ def setup_camera_probes():
         # camera_object.
 
 
+def setup_cam_background():
+    scene = get_scene()
+    # get background image struct
+    active_cam = scene.camera.name
+    bg_images = bpy.data.objects[active_cam].data.background_images.items()
+    # get background image data, if it exists in struct
+    try:
+        found_background_image = bg_images[0][1].image
+        scene.node_tree.nodes["image_node"].image = found_background_image
+        scene.node_tree.nodes["switch_background"].check = True
+        # image_scale = bg_images[0][1].scale
+    except:
+        scene.node_tree.nodes["switch_background"].check = False
+        print("No Background Found")
+
+
 def setup_place(the_render_quality, the_framerate):
     scene = get_scene()
 
@@ -715,8 +739,8 @@ def setup_place(the_render_quality, the_framerate):
     scene.render.fps = scene_framerate
 
     scene.frame_step = int(round(scene_framerate / the_framerate))
-    scene.frame_start = first_frame
-    scene.frame_end = last_frame
+    scene.frame_start = int(first_frame)
+    scene.frame_end = int(last_frame)
 
     # allow frame dropping in the viewport so the speed is right :)
     scene.sync_mode = "FRAME_DROP"
@@ -742,8 +766,33 @@ def setup_place(the_render_quality, the_framerate):
     # but the default denoise might be fine so will try that
     render_layers_node = tree.nodes.new(type="CompositorNodeRLayers")
 
-    # image_node.image = bpy.data.images['YOUR_IMAGE_NAME']
     render_layers_node.location = 0, 0
+
+    # create back-image toggle switch node
+    switch_background_node = tree.nodes.new(type="CompositorNodeSwitch")
+    switch_background_node.name = "switch_background"
+    switch_background_node.location = 600, 250
+
+    # create image node
+    image_node = tree.nodes.new(type="CompositorNodeImage")
+    image_node.name = "image_node"
+    image_node.location = 0, 400
+
+    setup_cam_background()
+
+    # image_node.image = bpy.data.images['YOUR_IMAGE_NAME']
+
+    # create scale node
+    scale_node = tree.nodes.new(type="CompositorNodeScale")
+    scale_node.name = "background_scale"
+    scale_node.location = 200, 350
+    scale_node.space = "RENDER_SIZE"
+    scale_node.frame_method = "CROP"
+
+    # create alpha over node
+    alpha_over_node = tree.nodes.new(type="CompositorNodeAlphaOver")
+    alpha_over_node.name = "alpha_over"
+    alpha_over_node.location = 400, 300
 
     # create Subtract node
     subtract_node = tree.nodes.new(type="CompositorNodeMath")
@@ -761,18 +810,39 @@ def setup_place(the_render_quality, the_framerate):
     denoise_node.location = 300, 0
 
     # create depth toggle switch node
-    switch_node = tree.nodes.new(type="CompositorNodeSwitch")
-    switch_node.location = 700, 0
+    switch_depth_node = tree.nodes.new(type="CompositorNodeSwitch")
+    switch_depth_node.name = "switch_depth"
+    switch_depth_node.location = 700, 0
 
     # create output node
     comp_node = tree.nodes.new("CompositorNodeComposite")
     comp_node.location = 900, 0
+
     # link nodes
     links = tree.links
+
+    # choose image from first (current?) camera
+
+    # choose crop
+
+    # link image to scale
+    links.new(image_node.outputs[0], scale_node.inputs[0])
+    # link scale to alpha over
+    links.new(scale_node.outputs[0], alpha_over_node.inputs[1])
+    # link alpha over to background switch
+    links.new(alpha_over_node.outputs[0], switch_background_node.inputs[1])
+    # render image to alpha over
+    links.new(render_layers_node.outputs[0], alpha_over_node.inputs[2])
+    # link render image to background switch
+    links.new(render_layers_node.outputs[0], switch_background_node.inputs[0])
+    # link background switch to depth switch
+    links.new(switch_background_node.outputs[0], switch_depth_node.inputs[0])
+    #
+
     # depth to subtract , subtract to divide, divide to depth toggle switch
     links.new(render_layers_node.outputs[2], subtract_node.inputs[0])
     links.new(subtract_node.outputs[0], divide_node.inputs[0])
-    links.new(divide_node.outputs[0], switch_node.inputs[1])
+    links.new(divide_node.outputs[0], switch_depth_node.inputs[1])
     # link render to denoiser
     links.new(render_layers_node.outputs[3], denoise_node.inputs[0])
     links.new(render_layers_node.outputs[4], denoise_node.inputs[1])
@@ -782,10 +852,10 @@ def setup_place(the_render_quality, the_framerate):
     # links.new(denoise_node.outputs[0], switch_node.inputs[0])
 
     # link rendered image to switch
-    links.new(render_layers_node.outputs[0], switch_node.inputs[0])
+    # links.new(render_layers_node.outputs[0], switch_depth_node.inputs[0])
 
     # link switch to output
-    links.new(switch_node.outputs[0], comp_node.inputs[0])
+    links.new(switch_depth_node.outputs[0], comp_node.inputs[0])
 
     def remove_drivers_for_this(objectToChange):
         #    remove existing drivers
@@ -804,7 +874,9 @@ def setup_place(the_render_quality, the_framerate):
         new_driver_variable = new_driver.variables.new()
         new_driver_variable.targets[0].id_type = "SCENE"
         new_driver_variable.targets[0].id = scene
-        new_driver_variable.targets[0].data_path = 'node_tree.nodes["Switch"].check'
+        new_driver_variable.targets[
+            0
+        ].data_path = 'node_tree.nodes["switch_depth"].check'
         new_driver.expression = (
             f"{depthModeValue} if int(var) == 1 else {colorModeValue}"
         )
@@ -949,7 +1021,7 @@ def clean_and_render_place(
                 original_resolution_y = scene.render.resolution_y
                 setup_probe_rendering()
                 # toggle the depth toggle off
-                scene.node_tree.nodes["Switch"].check = False
+                scene.node_tree.nodes["switch_depth"].check = False
                 # set the frame for the best lighting
                 scene.frame_set(the_best_lighting_frame)
                 # render with the probe name
@@ -986,13 +1058,15 @@ def clean_and_render_place(
 
                     setup_video_rendering()
                     # toggle the depth toggle off
-                    scene.node_tree.nodes["Switch"].check = False
+                    scene.node_tree.nodes["switch_depth"].check = False
                     toggle_world_volume(True)
                     toggle_depth_hidden_objects(True)
+                    toggle_depth_visible_objects(False)
 
                     reenable_hidden_meshes()
                     hide_meshes_for_camera(camera_object.name, False)
 
+                    setup_cam_background()
                     # render without the depth name
                     custom_render_video(
                         camName=camera_object.name,
@@ -1031,10 +1105,11 @@ def clean_and_render_place(
                     setup_video_rendering()
                     scene.camera = camera_object
                     # toggle the depth toggle on
-                    scene.node_tree.nodes["Switch"].check = True
+                    scene.node_tree.nodes["switch_depth"].check = True
                     scene.camera = camera_object
                     toggle_world_volume(False)
                     toggle_depth_hidden_objects(False)
+                    toggle_depth_visible_objects(True)
 
                     reenable_hidden_meshes()
                     hide_meshes_for_camera(camera_object.name, True)
