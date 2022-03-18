@@ -700,9 +700,11 @@ def setup_cam_background():
         found_background_image = bg_images[0][1].image
         scene.node_tree.nodes["image_node"].image = found_background_image
         scene.node_tree.nodes["switch_background"].check = True
+        scene.render.film_transparent = True
         # image_scale = bg_images[0][1].scale
     except:
         scene.node_tree.nodes["switch_background"].check = False
+        scene.render.film_transparent = False
         print("No Background Found")
 
 
