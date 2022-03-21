@@ -21,9 +21,9 @@ def setup_model():
     last_frame = -9999
     for action in bpy.data.actions:
         if action.frame_range[1] > last_frame:
-            last_frame = action.frame_range[1]
+            last_frame = int(action.frame_range[1])
         if action.frame_range[0] < first_frame:
-            first_frame = action.frame_range[0]
+            first_frame = int(action.frame_range[0])
 
     scene.frame_start = first_frame
     scene.frame_end = last_frame

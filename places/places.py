@@ -592,6 +592,14 @@ def toggle_depth_visible_objects(isToggled=True):
             collection.exclude = not isToggled
 
 
+def toggle_probe_visible_objects(isToggled=True):
+    view_layer = get_view_layer()
+    # NOTE HAVE to loop through view_layer ?? , can't loop through collection.children ohwell
+    for collection in view_layer.layer_collection.children["Details"].children:
+        if collection.name == "visible_to_probe":
+            collection.exclude = not isToggled
+
+
 # not needed! might help if stopping "make videos" before it finshed
 def reenable_all_meshes():
     global meshnames_that_were_disabled_in_render
@@ -692,15 +700,18 @@ def setup_camera_probes():
 
 def setup_cam_background():
     scene = get_scene()
-    # get background image struct
-    active_cam = scene.camera.name
-    bg_images = bpy.data.objects[active_cam].data.background_images.items()
-    # get background image data, if it exists in struct
+
     try:
+        # get background image struct
+        active_cam = scene.camera.name
+        bg_images = bpy.data.objects[active_cam].data.background_images.items()
+        # get background image data, if it exists in struct
         found_background_image = bg_images[0][1].image
         scene.node_tree.nodes["image_node"].image = found_background_image
         scene.node_tree.nodes["switch_background"].check = True
         scene.render.film_transparent = True
+        scene.view_settings.view_transform = "Standard"
+
         # image_scale = bg_images[0][1].scale
     except:
         scene.node_tree.nodes["switch_background"].check = False
@@ -914,8 +925,9 @@ def setup_place(the_render_quality, the_framerate):
     add_depth_switch_driver(scene, "cycles.samples", the_render_quality, 1)
     # NOTE motion_blur_shutter should be 0 for depth, but it crashes with GPU Optix rendering in cycles x
     add_depth_switch_driver(scene, "render.motion_blur_shutter", 0.5, 0.1)
+    # now done before render
     # '"Filmic"', '"Raw"'
-    add_depth_switch_driver(scene, "view_settings.view_transform", 2.1, 4.1)
+    # add_depth_switch_driver(scene, "view_settings.view_transform", 2.1, 4.1)
     # '"sRGB"', '"Raw"'
     add_depth_switch_driver(scene, "sequencer_colorspace_settings.name", 11.0, 10.0)
     add_depth_switch_driver(tree.nodes["Denoise"], "mute", False, True)
@@ -1024,6 +1036,11 @@ def clean_and_render_place(
                 setup_probe_rendering()
                 # toggle the depth toggle off
                 scene.node_tree.nodes["switch_depth"].check = False
+                toggle_depth_hidden_objects(True)
+                toggle_depth_visible_objects(False)
+                toggle_probe_visible_objects(True)
+                scene.view_settings.view_transform = "Raw"
+
                 # set the frame for the best lighting
                 scene.frame_set(the_best_lighting_frame)
                 # render with the probe name
@@ -1031,6 +1048,9 @@ def clean_and_render_place(
                 bpy.ops.render.render(animation=False, write_still=True)
                 scene.render.resolution_x = original_resolution_x
                 scene.render.resolution_y = original_resolution_y
+                toggle_depth_hidden_objects(True)
+                toggle_probe_visible_objects(False)
+                toggle_depth_visible_objects(False)
 
             # find all the segments enabled for this camera
             for segment_name in segment_names_for_cam:
@@ -1064,6 +1084,8 @@ def clean_and_render_place(
                     toggle_world_volume(True)
                     toggle_depth_hidden_objects(True)
                     toggle_depth_visible_objects(False)
+                    toggle_probe_visible_objects(False)
+                    scene.view_settings.view_transform = "Filmic"
 
                     reenable_hidden_meshes()
                     hide_meshes_for_camera(camera_object.name, False)
@@ -1112,6 +1134,8 @@ def clean_and_render_place(
                     toggle_world_volume(False)
                     toggle_depth_hidden_objects(False)
                     toggle_depth_visible_objects(True)
+                    toggle_probe_visible_objects(False)
+                    scene.view_settings.view_transform = "Raw"
 
                     reenable_hidden_meshes()
                     hide_meshes_for_camera(camera_object.name, True)
@@ -1125,6 +1149,8 @@ def clean_and_render_place(
                         segments_info=segments_info,
                         fileNamePost="_depth",
                     )
+
+                    scene.view_settings.view_transform = "Filmic"
 
                     reenable_hidden_meshes()
 
