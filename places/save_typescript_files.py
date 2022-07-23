@@ -20,7 +20,7 @@ def save_typescript_files(
     # Save the typescript files
 
     # Save index file
-    with open(parent_folder_path + os.sep + "index.ts", "w") as file:
+    with open(parent_folder_path + os.sep + this_place_name + ".ts", "w") as file:
 
         file.write(f'import modelFile from "./{this_place_name}.glb";\n\n')
 
@@ -152,7 +152,7 @@ def save_typescript_files(
         # grandparent_folder_path
 
     # Save all places index file
-    with open(grandparent_folder_path + os.sep + "index.ts", "w") as file:
+    with open(grandparent_folder_path + os.sep + "places.ts", "w") as file:
 
         for looped_name in place_names:
             file.write(
