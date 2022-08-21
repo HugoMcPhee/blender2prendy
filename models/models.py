@@ -3,6 +3,8 @@ import os
 from math import radians
 from mathutils import Euler, Vector
 
+from .make_lowpoly import make_lowpoly
+
 # from .dump import dump
 from .setup_model import setup_model
 from .export_model import export_model
@@ -44,6 +46,16 @@ class WM_OT_ExportModel(Operator):
         return {"FINISHED"}
 
 
+class WM_OT_MakeLowpoly(Operator):
+    bl_label = "Make lowpoly"
+    bl_idname = "wm.make_lowpoly"
+
+    def execute(self, context):
+        make_lowpoly()
+        print("making lowpoly done :) 🌷")
+        return {"FINISHED"}
+
+
 # ------------------------------------------------------------------------
 #    Panel in Object Mode
 # ------------------------------------------------------------------------
@@ -64,6 +76,9 @@ class OBJECT_PT_ModelPanel(Panel):
         layout.operator(
             "wm.export_model", text="Save Model", icon="OUTLINER_OB_ARMATURE"
         )
+        layout.operator(
+            "wm.make_lowpoly", text="Make Lowpoly", icon="OUTLINER_OB_ARMATURE"
+        )
         layout.separator()
 
 
@@ -79,6 +94,7 @@ def init_model_tools():
     classes = (
         WM_OT_SetupModel,
         WM_OT_ExportModel,
+        WM_OT_MakeLowpoly,
         OBJECT_PT_ModelPanel,
     )
 
