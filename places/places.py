@@ -304,20 +304,22 @@ def update_items_and_variables():
         this_cam_has_a_cambox = False
         found_main_camera = None
 
-        camera_names.append(looped_collection.name)
+        looped_cam_name = looped_collection.name
+
+        camera_names.append(looped_cam_name)
         child_camBox_counter = 1
-        for looped_child_object in looped_collection.objects:
-            if (
-                looped_child_object.type == "CAMERA"
-                and not looped_child_object.data.type == "PANO"
-            ):
+        for child_object in looped_collection.objects:
+            if child_object.type == "CAMERA" and not child_object.data.type == "PANO":
                 # rename the camera object and the camera
-                looped_child_object.name = looped_collection.name
-                looped_child_object.data.name = looped_collection.name
-                found_main_camera = looped_child_object
-            elif not (looped_child_object.type == "CAMERA"):
-                looped_child_object.name = (
-                    f"camBox_{looped_collection.name}.{str(child_camBox_counter)}"
+                child_object.name = looped_cam_name
+                child_object.data.name = looped_cam_name
+                found_main_camera = child_object
+
+            elif not (child_object.type == "CAMERA") and not (
+                child_object.type == "EMPTY"
+            ):
+                child_object.name = (
+                    f"camBox_{looped_cam_name}.{str(child_camBox_counter)}"
                 )
                 this_cam_has_a_cambox = True
                 child_camBox_counter += 1
@@ -329,16 +331,33 @@ def update_items_and_variables():
         #     ob for ob in scene.objects if ob.type == "CAMERA" and ob.data.type != "PANO"
         # ]
 
-        for looped_child_object in looped_collection.objects:
-            if looped_child_object.type == "MESH":
-                looped_child_object.display_type = "WIRE"
-                looped_child_object.visible_camera = True
-                looped_child_object.visible_camera = False
-                looped_child_object.visible_diffuse = False
-                looped_child_object.visible_glossy = False
-                looped_child_object.visible_transmission = False
-                looped_child_object.visible_volume_scatter = False
-                looped_child_object.visible_shadow = False
+        for child_object in looped_collection.objects:
+            if child_object.type == "MESH":
+                child_object.display_type = "WIRE"
+                child_object.visible_camera = True
+                child_object.visible_camera = False
+                child_object.visible_diffuse = False
+                child_object.visible_glossy = False
+                child_object.visible_transmission = False
+                child_object.visible_volume_scatter = False
+                child_object.visible_shadow = False
+            elif child_object.type == "EMPTY":
+                # Check the near and far depth points to set the camera clipping
+                if (
+                    child_object.name == f"{looped_cam_name}_depth"
+                    or child_object.name == f"{looped_cam_name}_depth_far"
+                ):
+                    # Get their world space positions as vectors
+                    point_pos = child_object.matrix_world.translation
+                    cam_pos = found_main_camera.matrix_world.translation
+                    distance = (point_pos - cam_pos).length
+                    found_main_camera.data.clip_end = distance
+                if child_object.name == f"{looped_cam_name}_depth_near":
+                    # Get their world space positions as vectors
+                    point_pos = child_object.matrix_world.translation
+                    cam_pos = found_main_camera.matrix_world.translation
+                    distance = (point_pos - cam_pos).length
+                    found_main_camera.data.clip_start = distance
 
     # Rename walls
     child_wall_counter = 1
@@ -447,12 +466,9 @@ def update_items_and_variables():
     )
 
     for looped_collection in collections["cameras"].children:
-        for looped_child_object in looped_collection.objects:
-            if (
-                looped_child_object.type == "CAMERA"
-                and not looped_child_object.data.type == "PANO"
-            ):
-                camera_object = looped_child_object
+        for child_object in looped_collection.objects:
+            if child_object.type == "CAMERA" and not child_object.data.type == "PANO":
+                camera_object = child_object
 
                 segment_names_for_cam = []
                 for segment_name in segments_order:

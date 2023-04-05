@@ -10,15 +10,15 @@ from mathutils import Euler, Vector
 # Setup model stuff
 # -------------------------------------------------
 
-# TEXTURE_SIZE = 1024
-TEXTURE_SIZE = 512
-# TEXTURE_SIZE = 256
+# colorTextureSize = 1024
+# colorTextureSize = 512
+# colorTextureSize = 256
 # TODO parameter
-# TARGET_POLYS = 15000
-# TARGET_POLYS = 7500
-# TARGET_POLYS = 3750
-TARGET_POLYS = 4000
-# TARGET_POLYS = 2000
+# targetPolys = 15000
+# targetPolys = 7500
+# targetPolys = 3750
+# targetPolys = 4000
+# targetPolys = 2000
 
 
 def set_shading(object, OnOff=True):
@@ -37,7 +37,7 @@ def set_shading(object, OnOff=True):
     object.data.update()
 
 
-def make_lowpoly():
+def make_lowpoly(colorTextureSize, targetPolys):
 
     # get the scene
     scene = bpy.context.scene
@@ -76,7 +76,7 @@ def make_lowpoly():
 
     lowpoly_poly_amount = len(lowpoly_mesh.polygons)
 
-    TARGET_PERCENT = TARGET_POLYS / lowpoly_poly_amount
+    TARGET_PERCENT = targetPolys / lowpoly_poly_amount
 
     # Add decimate modifier to lowpoly object
     # decimateModifier = lowpoly_object.modifier_add(name="Decimate", type="DECIMATE")
@@ -94,7 +94,7 @@ def make_lowpoly():
     # ---------------------------------
     # xatlus
     bpy.context.scene.pack_tool.bruteForce = True
-    bpy.context.scene.pack_tool.resolution = TEXTURE_SIZE
+    bpy.context.scene.pack_tool.resolution = colorTextureSize
 
     original_view_type = bpy.context.area.ui_type
     bpy.context.area.ui_type = "VIEW_3D"
@@ -128,7 +128,9 @@ def make_lowpoly():
 
     # color -----
 
-    color_image = bpy.data.images.new("color", width=TEXTURE_SIZE, height=TEXTURE_SIZE)
+    color_image = bpy.data.images.new(
+        "color", width=colorTextureSize, height=colorTextureSize
+    )
     # Create a new texture ‘color’ , use the size (1024) and set the color to grey
     # In Shading, create an ‘Image Texture’, select ‘color’ and connect it to the ‘Base Color’
 
@@ -164,7 +166,7 @@ def make_lowpoly():
     # Create a ‘Image Texture’ , select ‘normal’, then color-space ‘Non-Color’, and connect to Normal map color
 
     normal_image = bpy.data.images.new(
-        "normal", width=TEXTURE_SIZE, height=TEXTURE_SIZE
+        "normal", width=colorTextureSize, height=colorTextureSize
     )
     normal_image.colorspace_settings.name = "Non-Color"
 
