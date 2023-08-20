@@ -3,10 +3,8 @@ import subprocess
 
 
 def combine_videos(parent_folder_path, camera_names, segments_for_cams):
-
     # join_color_vids.txt
     with open(parent_folder_path + os.sep + "join_color_vids.txt", "w") as file:
-
         # Import videos
         file.write(
             "# tells the video joiner the names and order of the color videos \n"
@@ -18,7 +16,6 @@ def combine_videos(parent_folder_path, camera_names, segments_for_cams):
 
     # join_depth_vids.txt
     with open(parent_folder_path + os.sep + "join_depth_vids.txt", "w") as file:
-
         # Import videos
         file.write(
             "# tells the video joiner the names and order of the depth videos \n"
