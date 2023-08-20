@@ -1,27 +1,47 @@
 import bpy
-import os
-from math import radians
-from mathutils import Euler, Vector
-
-# from .dump import dump
 
 
-# -------------------------------------------------
-# Setup model stuff
-# -------------------------------------------------
+def merge_vertex_colors(obj):
+    """Merge multiple vertex color layers of the object into one."""
 
-# colorTextureSize = 1024
-# colorTextureSize = 512
-# colorTextureSize = 256
-# TODO parameter
-# targetPolys = 15000
-# targetPolys = 7500
-# targetPolys = 3750
-# targetPolys = 4000
-# targetPolys = 2000
+    if not obj or obj.type != "MESH":
+        return
+
+    mesh = obj.data
+
+    # Ensure the object has vertex colors
+    if len(mesh.vertex_colors) <= 1:
+        return  # nothing to merge
+
+    # Merge vertex colors
+    merged_vcol_layer = mesh.vertex_colors.new(name="MergedVCol")
+    default_color = [0, 0, 0, 1]  # Default color (usually black with alpha of 1)
+
+    for loop_index in range(len(merged_vcol_layer.data)):
+        for vcol_layer in mesh.vertex_colors:
+            color = vcol_layer.data[loop_index].color
+            if color != default_color:
+                merged_vcol_layer.data[loop_index].color = color
+                break  # Once a valid color is found, skip to the next loop_index
+
+    # Remove original vertex color layers
+    while len(mesh.vertex_colors) > 1:
+        mesh.vertex_colors.remove(mesh.vertex_colors[0])
+
+    # 1. Delete all materials on the object until left with one
+    while len(obj.material_slots) > 1:
+        bpy.ops.object.material_slot_remove({"object": obj})
+
+    # 2. Update the remaining material's "Color Attribute" shader node to use the new vertex colors layer
+    mat = obj.material_slots[0].material if obj.material_slots else None
+    if mat and mat.use_nodes:
+        tree = mat.node_tree
+        color_attr_node = tree.nodes.get("Color Attribute", None)
+        if color_attr_node:
+            color_attr_node.layer_name = "MergedVCol"
 
 
-def set_shading(object, OnOff=True):
+def set_smooth_shading(object, OnOff=True):
     """Set the shading mode of an object
     True means turn smooth shading on.
     False means turn smooth shading off.
@@ -38,23 +58,17 @@ def set_shading(object, OnOff=True):
 
 
 def make_lowpoly(colorTextureSize, targetPolys):
-
     # get the scene
     scene = bpy.context.scene
 
-    example = "hello"
-
-    print(f"make_lowpoly {example}")
-
-    # After selecting the hipoly
-
-    # Get the selected object
+    # Get the selected object, this is the hipoly
     active_object = bpy.context.view_layer.objects.active
     hipoly_object = active_object
+    merge_vertex_colors(hipoly_object)
 
     original_name = hipoly_object.name
 
-    # Rename it name_hipoly
+    # Rename it to <name>_hipoly
     hipoly_object.name = original_name + "_hipoly"
     # Duplicate it, and replace _hipoly with _lowpoly
     lowpoly_object = hipoly_object.copy()
@@ -65,34 +79,24 @@ def make_lowpoly(colorTextureSize, targetPolys):
 
     bpy.context.collection.objects.link(lowpoly_object)
 
-    # For the lowpoly, decimate it to about 15,000 by default (can set the number)
-    # Shade smooth
-    # hipoly_mesh = hipoly_object.data
-    # hipoly_object.shade_smooth(True)
-
-    # lowpoly_object.hide_viewport = True
+    # For the lowpoly, decimate it (can set the number)
 
     lowpoly_mesh = lowpoly_object.data
-
     lowpoly_poly_amount = len(lowpoly_mesh.polygons)
-
-    TARGET_PERCENT = targetPolys / lowpoly_poly_amount
+    decimate_ratio = targetPolys / lowpoly_poly_amount
 
     # Add decimate modifier to lowpoly object
-    # decimateModifier = lowpoly_object.modifier_add(name="Decimate", type="DECIMATE")
-
     decimateModifier = lowpoly_object.modifiers.new(name="Decimate", type="DECIMATE")
-    # decimateModifier.ratio = 0.1
-    decimateModifier.ratio = TARGET_PERCENT
+    decimateModifier.ratio = decimate_ratio
 
-    # set the lowpoly mesh as active
+    # Set the lowpoly mesh as active
     bpy.context.view_layer.objects.active = lowpoly_object
     bpy.ops.object.modifier_apply(modifier="Decimate")
 
-    set_shading(lowpoly_object, True)
+    set_smooth_shading(lowpoly_object, True)
 
-    # ---------------------------------
-    # xatlus
+    # ---------------------------------------------
+    # xatlus uv unwrap
     bpy.context.scene.pack_tool.bruteForce = True
     bpy.context.scene.pack_tool.resolution = colorTextureSize
 
@@ -107,7 +111,7 @@ def make_lowpoly(colorTextureSize, targetPolys):
 
     bpy.context.area.ui_type = original_view_type
 
-    # ------------------------
+    # ---------------------------------------------
     # Material
 
     original_material = lowpoly_object.active_material
@@ -117,26 +121,24 @@ def make_lowpoly(colorTextureSize, targetPolys):
     lowpoly_material = lowpoly_object.active_material
     lowpoly_material.name = original_name + "_mat"
 
-    # nodes -------------------------------------------------------------
+    # ---------------------------------------------
+    # Nodes
 
     tree = lowpoly_material.node_tree
 
     # Delete the vertex color node
 
-    vertex_color_node = tree.nodes["Vertex Color"]
+    vertex_color_node = tree.nodes["Color Attribute"]
     tree.nodes.remove(vertex_color_node)
 
-    # color -----
+    # -----------------
+    # Color
 
     color_image = bpy.data.images.new(
         "color", width=colorTextureSize, height=colorTextureSize
     )
-    # Create a new texture ‘color’ , use the size (1024) and set the color to grey
-    # In Shading, create an ‘Image Texture’, select ‘color’ and connect it to the ‘Base Color’
-
-    # clear default nodes
-    # for node in tree.nodes:
-    #     tree.nodes.remove(node)
+    # Create a new texture 'color', and set the color to grey
+    # In Shader nodes, create an 'Image Texture', select 'color' and connect it to the 'Base Color' of the 'Principled BSDF'
 
     main_material_node = tree.nodes["Principled BSDF"]
 
@@ -146,24 +148,16 @@ def make_lowpoly(colorTextureSize, targetPolys):
     image_node.name = "image_node"
     image_node.location = -400, 400
     image_node.image = color_image
-    # image_node
 
     # link nodes
     links = tree.links
-
     links.new(image_node.outputs[0], main_material_node.inputs[0])
 
-    # choose image from first (current?) camera
-
-    # choose crop
-
-    # link image to scale
-    # links.new(image_node.outputs[0], scale_node.inputs[0])
-
-    # normal -----
-    # Create a new texture ‘normal’ , use the size (1024)
+    # -----------------
+    # Normal
+    # Create a new texture 'normal'
     # In shading create a normalMap and connect it to ‘normal’
-    # Create a ‘Image Texture’ , select ‘normal’, then color-space ‘Non-Color’, and connect to Normal map color
+    # Create a 'Image Texture' , select 'normal', then color-space 'Non-Color', and connect to Normal map color
 
     normal_image = bpy.data.images.new(
         "normal", width=colorTextureSize, height=colorTextureSize
@@ -174,7 +168,6 @@ def make_lowpoly(colorTextureSize, targetPolys):
     normal_image_node.name = "normal_image_node"
     normal_image_node.location = -500, 0
     normal_image_node.image = normal_image
-    # bpy.data.images["color"].colorspace_settings.name = 'Non-Color'
 
     normal_map_node = tree.nodes.new(type="ShaderNodeNormalMap")
     normal_map_node.name = "normal_map_node"
@@ -183,13 +176,12 @@ def make_lowpoly(colorTextureSize, targetPolys):
     links.new(normal_image_node.outputs[0], normal_map_node.inputs[1])
     links.new(normal_map_node.outputs[0], main_material_node.inputs[22])
 
-    # normal_image_node.
-
     # -----------------------------
     # Baking
     # -----------------------------
 
-    # (diffuse) ---------------------
+    # ---------------------
+    # Diffuse
 
     # Set the renderer to cycles
     scene.render.engine = "CYCLES"
@@ -223,7 +215,8 @@ def make_lowpoly(colorTextureSize, targetPolys):
     bpy.context.view_layer.objects.active = lowpoly_object
     bpy.ops.object.bake(type="DIFFUSE")
 
-    # (normal) ---------------------
+    # ---------------------
+    # Normal
 
     # Change Bake type to normal, and keep settings
     scene.cycles.bake_type = "NORMAL"

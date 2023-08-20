@@ -1,16 +1,12 @@
 {
-    "python.pythonPath": "C:\\Users\\pinec\\AppData\\Local\\Programs\\Python\\Python39\\python.exe",
-    "python.formatting.provider": "black",
-    "python.autoComplete.extraPaths": [
-        "C:/Users/pinec/Documents/GitHub/blender-autocomplete/3.1"
-    ],
-    "python.linting.pylintArgs": [
-        "--init-hook",
-        "import sys; sys.path.append('C:/Users/pinec/Documents/GitHub/blender-autocomplete/3.1')"
-    ],
-    "python.linting.pycodestyleEnabled": true,
-    "python.linting.enabled": true,
-    "python.analysis.extraPaths": [
-        "C:/Users/pinec/Documents/GitHub/blender-autocomplete/3.1"
-    ],
+  "python.pythonPath": "C:\\Users\\pinec\\AppData\\Local\\Programs\\Python\\Python39\\python.exe",
+  "python.autoComplete.extraPaths": [
+    "C:/Users/pinec/Documents/GitHub/blender-autocomplete/3.1"
+  ],
+  "python.analysis.extraPaths": [
+    "C:/Users/pinec/Documents/GitHub/blender-autocomplete/3.1"
+  ],
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  }
 }

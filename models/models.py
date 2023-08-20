@@ -1,36 +1,9 @@
 import bpy
-import os
-from math import radians
-from mathutils import Euler, Vector
-from bpy.props import (
-    BoolProperty,
-    BoolVectorProperty,
-    IntProperty,
-    EnumProperty,
-    PointerProperty,
-)
-from bpy.types import (
-    Panel,
-    Menu,
-    Operator,
-    PropertyGroup,
-)
+from bpy.props import IntProperty, EnumProperty, PointerProperty
+from bpy.types import Panel, Operator, PropertyGroup
 from .make_lowpoly import make_lowpoly
-
-# from .dump import dump
 from .setup_model import setup_model
 from .export_model import export_model
-
-
-# -------------------------------------------------
-# Adding tool panel stuff
-# -------------------------------------------------
-
-
-from bpy.types import (
-    Panel,
-    Operator,
-)
 
 
 # ------------------------------------------------------------------------
@@ -39,6 +12,8 @@ from bpy.types import (
 
 
 class RenderModelTools_Properties(PropertyGroup):
+    """Properties for rendering the model tools."""
+
     the_target_polys: IntProperty(
         name="Poly Amount",
         description="How many polygons should the model have?",
@@ -46,27 +21,24 @@ class RenderModelTools_Properties(PropertyGroup):
         min=1,
         max=40000,
     )
+
+    texture_sizes = [
+        ("1024", "1024", ""),
+        ("512", "512", ""),
+        ("256", "256", ""),
+        ("128", "128", ""),
+        ("64", "64", ""),
+    ]
+
     the_color_tex_size: EnumProperty(
         name="Texture Size",
         description="choose one of the color texture sizes",
-        items=[
-            ("1024", "1024", ""),
-            ("512", "512", ""),
-            ("256", "256", ""),
-            ("128", "128", ""),
-            ("64", "64", ""),
-        ],
+        items=texture_sizes,
     )
     the_normal_tex_size: EnumProperty(
         name="Normal texture size",
         description="choose one of the texture sizes",
-        items=[
-            ("1024", "1024", ""),
-            ("512", "512", ""),
-            ("256", "256", ""),
-            ("128", "128", ""),
-            ("64", "64", ""),
-        ],
+        items=texture_sizes,
     )
 
 
@@ -145,27 +117,19 @@ class RenderModelTools_Panel(Panel):
 #    Registration
 # ------------------------------------------------------------------------
 
-classes = None
-
-
-def init_model_tools():
-    global classes
-    classes = (
-        # properties
-        RenderModelTools_Properties,
-        RenderModelTools_Operator_SetupModel,
-        RenderModelTools_Operator_ExportModel,
-        RenderModelTools_Operator_MakeLowpoly,
-        RenderModelTools_Panel,
-    )
-
-
-init_model_tools()
+classes = (
+    RenderModelTools_Properties,
+    RenderModelTools_Operator_SetupModel,
+    RenderModelTools_Operator_ExportModel,
+    RenderModelTools_Operator_MakeLowpoly,
+    RenderModelTools_Panel,
+)
 
 
 def register_models():
-    print("auto registering????")
-    from bpy.utils import register_class, unregister_class
+    """Registers the model tools in Blender."""
+    print("Registering model tools...")
+    from bpy.utils import register_class
 
     for cls in classes:
         register_class(cls)
@@ -174,7 +138,8 @@ def register_models():
 
 
 def unregister_models():
-    print("auto unregistering????")
+    """Unregisters the model tools from Blender."""
+    print("Unregistering model tools...")
     from bpy.utils import unregister_class
 
     for cls in reversed(classes):

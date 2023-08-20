@@ -150,13 +150,11 @@ one_frame_time = 1 / chosen_framerate
 first_frame = 9999
 last_frame = -9999
 
-
 # ----------------------------------------------------------------------------------------
 # Setup everything
 
 
 def update_items_and_variables():
-
     scene = get_scene()
     collections = get_collections()
 
@@ -241,9 +239,9 @@ def update_items_and_variables():
             first_frame = action.frame_range[0]
 
     # use the start marker as the frame start if it's there
-    for m in scene.timeline_markers:
-        if m.frame == 0 or m.name == "start":
-            first_frame = m.frame
+    for marker in scene.timeline_markers:
+        if marker.frame == 0 or marker.name == "start":
+            first_frame = marker.frame
 
     scene.frame_start = int(first_frame)
     scene.frame_end = int(last_frame)
@@ -252,8 +250,6 @@ def update_items_and_variables():
     total_time = total_frames / scene_framerate
     chosen_framerate = scene_framerate / scene.frame_step
     one_frame_time = 1 / chosen_framerate
-    print("one_frame_time")
-    print(one_frame_time)
 
     # Get place names from folder names (folders with index files)
     with os.scandir(grandparent_folder_path) as it:
@@ -283,7 +279,6 @@ def update_items_and_variables():
 
     # turn camera objects into collections if theyre only objects
     for looped_object in collections["cameras"].objects:
-
         if looped_object.type == "CAMERA" and not looped_object.data.type == "PANO":
             add_collection_to_cameras(looped_object.name)
             # select the looped camera
@@ -297,7 +292,6 @@ def update_items_and_variables():
     # Rename camera objects if in a collection
 
     for looped_collection in collections["cameras"].children:
-        # print(f"looped_collection.name{looped_collection.name}")
         looped_collection.name = looped_collection.name.replace(".", "_")
         looped_collection.name = looped_collection.name.replace(" ", "_")
 
@@ -400,8 +394,8 @@ def update_items_and_variables():
 
     # check if it also doesnt already have a start frame
 
-    for m in scene.timeline_markers:
-        if m.frame == 0 or m.name == "start":
+    for marker in scene.timeline_markers:
+        if marker.frame == 0 or marker.name == "start":
             has_start_marker = True
     if not has_start_marker:
         new_first_marker = scene.timeline_markers.new("start", frame=0)
@@ -416,8 +410,8 @@ def update_items_and_variables():
     # loop through all the markers
     current_marker_index = 0
 
-    for m in sorted_markers:
-        marker_time = (m.frame - scene.frame_start) / scene.render.fps
+    for marker in sorted_markers:
+        marker_time = (marker.frame - scene.frame_start) / scene.render.fps
         next_marker_time = 0
         next_marker_frame = 0
         next_marker_index = current_marker_index + 1
@@ -436,8 +430,8 @@ def update_items_and_variables():
         print(f"marker_time:{marker_time} next_marker_time: {next_marker_time}")
         marker_duration = next_marker_time - marker_time
 
-        edited_name = m.name
-        if isStartName(m.name):
+        edited_name = marker.name
+        if isStartName(marker.name):
             edited_name = "start"
             segments_order.insert(0, edited_name)
         else:
@@ -447,7 +441,7 @@ def update_items_and_variables():
             name=edited_name,
             duration=marker_duration,
             time=marker_time,
-            frameStart=m.frame,
+            frameStart=marker.frame,
             frameEnd=next_marker_frame,
         )
 
@@ -553,6 +547,7 @@ def setup_video_rendering():
     scene.render.resolution_y = original_resolution_y
 
     scene.render.image_settings.file_format = "PNG"
+    # NOTE videos aren't rendered directly anymore, images are then converted to videos with ffmpeg
     scene.render.ffmpeg.format = "MPEG4"
     scene.render.ffmpeg.codec = "H264"
     scene.render.ffmpeg.audio_codec = "NONE"
@@ -638,7 +633,6 @@ def reenable_hidden_meshes():
 
 
 def hide_meshes_for_camera(cam_name, isDepth=False):
-
     global meshnames_that_were_disabled_in_render
     # hide meshes to camera that should be hidden
     if cam_name in hidden_meshes_for_cams:
@@ -1133,7 +1127,6 @@ def clean_and_render_place(
                     )
                     or should_overwrite_render
                 ):
-
                     # originalClipStart = 0.1
                     # originalClipEnd = 50
                     # originalClipStart = scene.camera.data.clip_start
@@ -1463,7 +1456,6 @@ class SegmentTogglePanel(bpy.types.Panel):
         return should_show
 
     def draw(self, context):
-
         layout = self.layout
         column = layout.column()
 
