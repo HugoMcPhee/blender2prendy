@@ -30,10 +30,6 @@ def update_items_and_variables(place_info: PlaceInfo):
     place_info.original_resolution_x = scene.render.resolution_x
     place_info.original_resolution_y = scene.render.resolution_y
 
-    place_info.filepath = bpy.path.basename(bpy.data.filepath)
-    if place_info.filepath:
-        scene.render.filepath = place_info.filepath
-
     # Get absolute path:
 
     place_info.path = os.path.normpath(bpy.data.filepath)
@@ -41,6 +37,19 @@ def update_items_and_variables(place_info: PlaceInfo):
 
     place_info.parent_folder_path = os.sep.join(place_info.parts[:-1])
     place_info.grandparent_folder_path = os.sep.join(place_info.parts[:-2])
+    place_info.renders_folder_path = place_info.parent_folder_path + os.sep + "renders"
+
+    # Add a "renders" folder to the current path if it doesn't exist
+    if not os.path.exists(place_info.renders_folder_path):
+        os.makedirs(place_info.renders_folder_path)
+
+    # place_info.filepath = bpy.path.basename(bpy.data.filepath)
+    # if place_info.filepath:
+    #     scene.render.filepath = place_info.filepath
+    scene.render.filepath = place_info.renders_folder_path
+
+    print(f"renders_folder_path: {place_info.renders_folder_path}")
+    print(f"filepath: {scene.render.filepath}")
 
     place_info.full_filename = place_info.parts[-1]
     place_info.full_filename_parts = place_info.full_filename.split(".")

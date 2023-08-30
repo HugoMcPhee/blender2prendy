@@ -1,25 +1,11 @@
 import os
+import shutil
 import subprocess
 
 import bpy
-from .place_info import PlaceInfo
-
-from .places import (
-    hide_meshes_for_camera,
-    reenable_all_meshes,
-    reenable_hidden_meshes,
-    setup_cam_background,
-    setup_camera_probes,
-    setup_probe_rendering,
-    setup_video_rendering,
-    toggle_depth_hidden_objects,
-    toggle_depth_visible_objects,
-    toggle_probe_visible_objects,
-    toggle_world_volume,
-    update_items_and_variables,
-)
 
 from ..get_things import get_collections, get_scene, get_view_layer
+from .cam_background import setup_cam_background
 from .collections import include_only_one_collection
 from .combine_videos import combine_videos
 from .convert_exportable_curves import (
@@ -28,10 +14,27 @@ from .convert_exportable_curves import (
     revert_curve_names,
 )
 from .custom_render_video import custom_render_video
+from .place_info import PlaceInfo
+from .places import (
+    setup_video_rendering,
+    update_items_and_variables,
+)
+from .hide_meshes import (
+    hide_meshes_for_camera,
+    reenable_all_meshes,
+    reenable_hidden_meshes,
+)
+from .depth_visible_objects import (
+    toggle_depth_hidden_objects,
+    toggle_depth_visible_objects,
+    toggle_world_volume,
+)
+from .probes import (
+    setup_camera_probes,
+    setup_probe_rendering,
+    toggle_probe_visible_objects,
+)
 from .save_typescript_files import save_typescript_files
-
-# custom ui imports
-
 
 # -------------------------------------------------
 # Original clean and render place
@@ -111,16 +114,16 @@ def clean_and_render_place(
                     camera_object = looped_object
 
         render_output_path_start = (
-            f"{place_info.parent_folder_path}{os.sep}{cam_collection.name}"
+            f"{place_info.renders_folder_path}{os.sep}{cam_collection.name}"
         )
         probe_output_path = f"{render_output_path_start}_probe.hdr"
 
-        def getVideoPath(camName, segmentName, isDepthVideo=False):
+        def get_video_path(camName, segmentName, is_depth_video=False):
             video_output_path_pre = (
-                f"{place_info.parent_folder_path}{os.sep}{camName}_{segmentName}"
+                f"{place_info.renders_folder_path}{os.sep}{camName}_{segmentName}"
             )
 
-            if not isDepthVideo:
+            if not is_depth_video:
                 return f"{video_output_path_pre}.mp4"
             else:
                 return f"{video_output_path_pre}_depth.mp4"
@@ -164,10 +167,10 @@ def clean_and_render_place(
                 # render color videos
                 if (
                     not os.path.isfile(
-                        getVideoPath(
+                        get_video_path(
                             camName=camera_object.name,
                             segmentName=segment_name,
-                            isDepthVideo=False,
+                            is_depth_video=False,
                         )
                     )
                     or should_overwrite_render
@@ -189,7 +192,7 @@ def clean_and_render_place(
                     toggle_probe_visible_objects(False)
                     scene.view_settings.view_transform = "Filmic"
 
-                    reenable_hidden_meshes()
+                    reenable_hidden_meshes(place_info)
                     hide_meshes_for_camera(place_info, camera_object.name, False)
 
                     setup_cam_background()
@@ -198,12 +201,12 @@ def clean_and_render_place(
                         camName=camera_object.name,
                         segmentName=segment_name,
                         chosen_framerate=place_info.chosen_framerate,
-                        parent_folder_path=place_info.parent_folder_path,
+                        renders_folder_path=place_info.renders_folder_path,
                         segments_info=place_info.segments_info,
                         fileNamePost="",
                     )
 
-                    reenable_hidden_meshes()
+                    reenable_hidden_meshes(place_info)
 
                     scene.camera.data.clip_start = originalClipStart
                     scene.camera.data.clip_end = originalClipEnd
@@ -211,10 +214,10 @@ def clean_and_render_place(
                 # render depth video
                 if (
                     not os.path.isfile(
-                        getVideoPath(
+                        get_video_path(
                             camName=camera_object.name,
                             segmentName=segment_name,
-                            isDepthVideo=True,
+                            is_depth_video=True,
                         )
                     )
                     or should_overwrite_render
@@ -238,7 +241,7 @@ def clean_and_render_place(
                     toggle_probe_visible_objects(False)
                     scene.view_settings.view_transform = "Raw"
 
-                    reenable_hidden_meshes()
+                    reenable_hidden_meshes(place_info)
                     hide_meshes_for_camera(place_info, camera_object.name, True)
 
                     # customRenderVideo(video_output_path_with_depth)
@@ -246,14 +249,14 @@ def clean_and_render_place(
                         camName=camera_object.name,
                         segmentName=segment_name,
                         chosen_framerate=place_info.chosen_framerate,
-                        parent_folder_path=place_info.parent_folder_path,
+                        renders_folder_path=place_info.renders_folder_path,
                         segments_info=place_info.segments_info,
                         fileNamePost="_depth",
                     )
 
                     scene.view_settings.view_transform = "Filmic"
 
-                    reenable_hidden_meshes()
+                    reenable_hidden_meshes(place_info)
 
                     # scene.camera.data.clip_start = originalClipStart
                     # scene.camera.data.clip_end = originalClipEnd
@@ -265,7 +268,8 @@ def clean_and_render_place(
 
     # combine all the camera names into a join_color_vids.txt and join_depth_vids.txt
     combine_videos(
-        parent_folder_path=place_info.parent_folder_path,
+        renders_folder_path=place_info.renders_folder_path,
+        place_folder_path=place_info.parent_folder_path,
         camera_names=place_info.camera_names,
         segments_for_cams=place_info.segments_for_cams,
     )
@@ -288,15 +292,22 @@ def clean_and_render_place(
         place_info.soundspot_names,
     )
     print("done :) ✨, converting probes ")
-    convertProbesCommand = f"{place_info.parent_folder_path}"
 
     # subprocess.run(
     #     "npx github:HugoMcPhee/hdr-to-babylon-env 128", cwd=parent_folder_path
     # )
     if should_convert_probes:
         subprocess.call(
-            f"cd {place_info.parent_folder_path} && npx github:HugoMcPhee/hdr-to-babylon-env 128",
+            f"cd {place_info.renders_folder_path} && npx github:HugoMcPhee/hdr-to-babylon-env 128",
             shell=True,
         )
+        # move all .env files from the renders folder to the parent folder
+        for file in os.listdir(place_info.renders_folder_path):
+            if file.endswith(".env"):
+                shutil.move(
+                    os.path.join(place_info.renders_folder_path, file),
+                    os.path.join(place_info.parent_folder_path, file),
+                )
+
     print("delete frames")
     print("all done :)")
