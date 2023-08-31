@@ -125,15 +125,45 @@ def setup_place(place_info: PlaceInfo, the_render_quality, the_framerate):
     alpha_over_node.name = "alpha_over"
     alpha_over_node.location = 400, 300
 
-    # create Subtract node
-    subtract_node = tree.nodes.new(type="CompositorNodeMath")
-    subtract_node.operation = "SUBTRACT"
-    subtract_node.location = 300, -200
+    # create value node for camera near clip
+    near_clip_value_node = tree.nodes.new(type="CompositorNodeValue")
+    near_clip_value_node.name = "near_clip"
+    near_clip_value_node.location = 300, -400
 
-    # create Divide node
-    divide_node = tree.nodes.new(type="CompositorNodeMath")
-    divide_node.operation = "DIVIDE"
-    divide_node.location = 480, -200
+    # create value node for camera far clip (below the near clip node)
+    far_clip_value_node = tree.nodes.new(type="CompositorNodeValue")
+    far_clip_value_node.name = "far_clip"
+    far_clip_value_node.location = 300, -500
+
+    # create a clip_range subtract node to subtract the near clip from the far clip (to the right of the clip value nodes)
+    clip_range_node = tree.nodes.new(type="CompositorNodeMath")
+    clip_range_node.name = "clip_range"
+    clip_range_node.operation = "SUBTRACT"
+    clip_range_node.location = 480, -450
+
+    # create Subtract depth node
+    subtract_depth_node = tree.nodes.new(type="CompositorNodeMath")
+    subtract_depth_node.name = "subtract_depth"
+    subtract_depth_node.operation = "SUBTRACT"
+    subtract_depth_node.location = 300, -200
+
+    # create Divide depth node
+    divide_depth_node = tree.nodes.new(type="CompositorNodeMath")
+    divide_depth_node.name = "divide_depth"
+    divide_depth_node.operation = "DIVIDE"
+    divide_depth_node.location = 480, -200
+
+    # create a max Math node, with a max value of 0 to the right of the divide node
+    max_node = tree.nodes.new(type="CompositorNodeMath")
+    max_node.operation = "MAXIMUM"
+    max_node.inputs[1].default_value = 0
+    max_node.location = 660, -200
+
+    # create a min Math node, with a min value of 1
+    min_node = tree.nodes.new(type="CompositorNodeMath")
+    min_node.operation = "MINIMUM"
+    min_node.inputs[1].default_value = 1
+    min_node.location = 840, -200
 
     # create Denoise node
     denoise_node = tree.nodes.new(type="CompositorNodeDenoise")
@@ -149,6 +179,7 @@ def setup_place(place_info: PlaceInfo, the_render_quality, the_framerate):
     comp_node = tree.nodes.new("CompositorNodeComposite")
     comp_node.location = 900, 0
 
+    # -------------------------------------------------
     # link nodes
     links = tree.links
 
@@ -170,10 +201,27 @@ def setup_place(place_info: PlaceInfo, the_render_quality, the_framerate):
     links.new(switch_background_node.outputs[0], switch_depth_node.inputs[0])
     #
 
-    # depth to subtract , subtract to divide, divide to depth toggle switch
-    links.new(render_layers_node.outputs[2], subtract_node.inputs[0])
-    links.new(subtract_node.outputs[0], divide_node.inputs[0])
-    links.new(divide_node.outputs[0], switch_depth_node.inputs[1])
+    # connect the camera near clip values to the subtract node
+    links.new(near_clip_value_node.outputs[0], subtract_depth_node.inputs[1])
+    # connect the clip_range_node to the divide node
+    links.new(clip_range_node.outputs[0], divide_depth_node.inputs[0])
+    # subtract the near clip from the far clip in the clip_range_node
+    links.new(far_clip_value_node.outputs[0], clip_range_node.inputs[0])
+    links.new(near_clip_value_node.outputs[0], clip_range_node.inputs[1])
+
+    # connect the clip range to the divide depth node
+    links.new(clip_range_node.outputs[0], divide_depth_node.inputs[1])
+
+    # depth to subtract
+    links.new(render_layers_node.outputs[2], subtract_depth_node.inputs[0])
+    # subtract to divide
+    links.new(subtract_depth_node.outputs[0], divide_depth_node.inputs[0])
+    # connect the divide node to the max node
+    links.new(divide_depth_node.outputs[0], max_node.inputs[0])
+    # connect the max node to the min node
+    links.new(max_node.outputs[0], min_node.inputs[0])
+    # min to depth toggle switch
+    links.new(min_node.outputs[0], switch_depth_node.inputs[1])
     # link render to denoiser
     links.new(render_layers_node.outputs[3], denoise_node.inputs[0])
     links.new(render_layers_node.outputs[4], denoise_node.inputs[1])
@@ -223,8 +271,8 @@ def setup_place(place_info: PlaceInfo, the_render_quality, the_framerate):
     # Adding drivers to depth toggle nodes
     # -------------------------------------------------
 
-    # Adding subtract driver
-    subtract_driver = subtract_node.inputs[1].driver_add("default_value").driver
+    # Adding cam near driver to cam near value node
+    subtract_driver = near_clip_value_node.outputs[0].driver_add("default_value").driver
     subtract_driver.type = "AVERAGE"
     subtract_driver_variable = subtract_driver.variables.new()
     subtract_driver_variable.targets[0].id_type = "SCENE"
@@ -232,7 +280,7 @@ def setup_place(place_info: PlaceInfo, the_render_quality, the_framerate):
     subtract_driver_variable.targets[0].data_path = "camera.data.clip_start"
 
     # Adding divide driver
-    divide_driver = divide_node.inputs[1].driver_add("default_value").driver
+    divide_driver = far_clip_value_node.outputs[0].driver_add("default_value").driver
     divide_driver.type = "AVERAGE"
     divide_driver_variable = divide_driver.variables.new()
     divide_driver_variable.targets[0].id_type = "SCENE"
