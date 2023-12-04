@@ -28,13 +28,60 @@ def combine_videos(
                 file.write(f"file '{looped_cam_name}_{segment_name}_depth.mp4'\n")
         file.write("\n")
 
-    combineVideosCommand_color = f'C:\\ffmpeg -f concat -i "join_color_vids.txt" -c copy -y "{renders_folder_path}{os.sep}color.mp4"  -hide_banner -loglevel error'
-    combineVideosCommand_depth = f'C:\\ffmpeg -f concat -i "join_depth_vids.txt" -c copy -y "{renders_folder_path}{os.sep}depth.mp4"  -hide_banner -loglevel error'
+    combineVideosCommand_color = [
+        "ffmpeg",
+        "-f",
+        "concat",
+        "-i",
+        "join_color_vids.txt",
+        "-c",
+        "copy",
+        "-y",
+        f"{renders_folder_path}{os.sep}color.mp4",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+    ]
+    combineVideosCommand_depth = [
+        "ffmpeg",
+        "-f",
+        "concat",
+        "-i",
+        "join_depth_vids.txt",
+        "-c",
+        "copy",
+        "-y",
+        f"{renders_folder_path}{os.sep}depth.mp4",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+    ]
 
     video_quality = "23"
     keyframes = "1"
 
-    combineColorAndDepthVertically = f'C:\\ffmpeg -i "{renders_folder_path}{os.sep}color.mp4" -i "{renders_folder_path}{os.sep}depth.mp4" -filter_complex vstack=inputs=2 -vcodec libx264 -crf {video_quality} -g {keyframes} -y -movflags faststart "{renders_folder_path}{os.sep}backdrops.mp4" -hide_banner -loglevel error'
+    combineColorAndDepthVertically = [
+        "ffmpeg",
+        "-i",
+        f"{renders_folder_path}{os.sep}color.mp4",
+        "-i",
+        f"{renders_folder_path}{os.sep}depth.mp4",
+        "-filter_complex",
+        "vstack=inputs=2",
+        "-vcodec",
+        "libx264",
+        "-crf",
+        video_quality,
+        "-g",
+        keyframes,
+        "-y",
+        "-movflags",
+        "faststart",
+        f"{renders_folder_path}{os.sep}backdrops.mp4",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+    ]
 
     # subprocess.run(f"cd {parent_folder_path}")
     subprocess.run(combineVideosCommand_color, cwd=renders_folder_path)

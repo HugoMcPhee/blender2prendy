@@ -296,6 +296,8 @@ def setup_place(place_info: PlaceInfo, the_render_quality, the_framerate):
     # add_depth_switch_driver(scene, "view_settings.view_transform", 2.1, 4.1)
     # '"sRGB"', '"Raw"'
     add_depth_switch_driver(scene, "sequencer_colorspace_settings.name", 11.0, 10.0)
-    add_depth_switch_driver(tree.nodes["Denoise"], "mute", False, True)
+
+    # NOTE maybe FIXME ? this broke going from blender 3.3 to 4.0
+    # add_depth_switch_driver(tree.nodes["Denoise"], "mute", False, True)
     # Set options for video rendering (now that the nodes are created)
     setup_video_rendering(place_info)

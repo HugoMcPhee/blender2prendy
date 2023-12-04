@@ -54,7 +54,7 @@ def setup_camera_probes():
             (radians(90), radians(0), radians(180)), "XYZ"
         )
         probe_object.data.type = "PANO"
-        probe_object.data.cycles.panorama_type = "EQUIRECTANGULAR"
+        probe_object.data.panorama_type = "EQUIRECTANGULAR"
         probe_object.name = f"{camera_object.name}_probe"
         # show an axis instead of the camera
         probe_object.show_axis = True

@@ -49,7 +49,31 @@ def custom_render_video(
         f"{frame_image_path}{str(amount_of_frames_saved ).zfill(4)}.png",
     )
 
-    makeVideoCommand = f'C:\\ffmpeg -framerate {chosen_framerate} -f image2 -i "{frame_image_path}%04d.png" -vcodec libx264 -crf {video_quality} -g {keyframes} -vf "fps={chosen_framerate},format=yuv420p,scale=1600:900" -y -movflags faststart "{video_output_path}.mp4" -hide_banner -loglevel error'
+    # makeVideoCommand = f'ffmpeg -framerate {chosen_framerate} -f image2 -i "{frame_image_path}%04d.png" -vcodec libx264 -crf {video_quality} -g {keyframes} -vf "fps={chosen_framerate},format=yuv420p,scale=1600:900" -y -movflags faststart "{video_output_path}.mp4" -hide_banner -loglevel error'
+    makeVideoCommand = [
+        "ffmpeg",
+        "-framerate",
+        str(chosen_framerate),
+        "-f",
+        "image2",
+        "-i",
+        f"{frame_image_path}%04d.png",
+        "-vcodec",
+        "libx264",
+        "-crf",
+        str(video_quality),
+        "-g",
+        str(keyframes),
+        "-vf",
+        f"fps={chosen_framerate},format=yuv420p,scale=1600:900",
+        "-y",
+        "-movflags",
+        "faststart",
+        f"{video_output_path}.mp4",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+    ]
     # -movflags faststart is for starting video fast on web?
     # NOTE -g might be depricated soon?
 
