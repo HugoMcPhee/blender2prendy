@@ -46,8 +46,8 @@ class PlaceInfo:
     soundspot_names: StringList = empty_field(list)
     #  60 so it can be divided into lots of others ( 1, 2, 5, 6, 10, 12, 15, 20, 30 )
     scene_framerate: int = 60
-    original_resolution_x: int = 1600  # = scene.render.resolution_x
-    original_resolution_y: int = 900  # = scene.render.resolution_y
+    original_resolution_x: int = 1440  # = scene.render.resolution_x
+    original_resolution_y: int = 1440  # = scene.render.resolution_y
     segments_info: Dict[str, Segment] = field(default_factory=dict)
     segments_order: StringList = empty_field(list)
     segments_for_cams: StringListMap = empty_field(dict)  # { camName: segmentNames[]

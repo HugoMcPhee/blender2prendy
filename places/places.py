@@ -253,9 +253,9 @@ def setup_place(place_info: PlaceInfo, the_render_quality, the_framerate):
         new_driver_variable = new_driver.variables.new()
         new_driver_variable.targets[0].id_type = "SCENE"
         new_driver_variable.targets[0].id = scene
-        new_driver_variable.targets[
-            0
-        ].data_path = 'node_tree.nodes["switch_depth"].check'
+        new_driver_variable.targets[0].data_path = (
+            'node_tree.nodes["switch_depth"].check'
+        )
         new_driver.expression = (
             f"{depthModeValue} if int(var) == 1 else {colorModeValue}"
         )
@@ -295,7 +295,7 @@ def setup_place(place_info: PlaceInfo, the_render_quality, the_framerate):
     # '"Filmic"', '"Raw"'
     # add_depth_switch_driver(scene, "view_settings.view_transform", 2.1, 4.1)
     # '"sRGB"', '"Raw"'
-    add_depth_switch_driver(scene, "sequencer_colorspace_settings.name", 11.0, 10.0)
+    # add_depth_switch_driver(scene, "sequencer_colorspace_settings.name", 11.0, 10.0)
 
     # NOTE maybe FIXME ? this broke going from blender 3.3 to 4.0
     # add_depth_switch_driver(tree.nodes["Denoise"], "mute", False, True)

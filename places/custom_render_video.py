@@ -65,7 +65,7 @@ def custom_render_video(
         "-g",
         str(keyframes),
         "-vf",
-        f"fps={chosen_framerate},format=yuv420p,scale=1600:900",
+        f"fps={chosen_framerate},format=yuv420p,scale=1440:1440",
         "-y",
         "-movflags",
         "faststart",

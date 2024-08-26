@@ -160,6 +160,13 @@ def update_items_and_variables(place_info: PlaceInfo):
                 child_object.data.name = looped_cam_name
                 found_main_camera = child_object
 
+            # Else if child type is EMPTY,
+            # and the object contains the word "focus"
+            # if it doesn't already have the looped_cam_name as a prefix, add it as a prefix
+            elif child_object.type == "EMPTY" and "focus" in child_object.name:
+                if not child_object.name.startswith(looped_cam_name):
+                    child_object.name = f"{looped_cam_name}_{child_object.name}"
+
             elif not (child_object.type == "CAMERA") and not (
                 child_object.type == "EMPTY"
             ):
@@ -360,9 +367,9 @@ def update_items_and_variables(place_info: PlaceInfo):
                             mesh_object.name
                         )
 
-                place_info.hidden_to_cams_for_meshes[
-                    mesh_object.name
-                ] = hidden_cams_names_for_mesh
+                place_info.hidden_to_cams_for_meshes[mesh_object.name] = (
+                    hidden_cams_names_for_mesh
+                )
 
     def recurvise_for_meshes_in_collection(top_collection, levels=10):
         def recurse(looped_item, depth):

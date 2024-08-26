@@ -1,7 +1,6 @@
 import os
 import shutil
 import subprocess
-
 import bpy
 
 from ..get_things import get_collections, get_scene, get_view_layer
@@ -190,7 +189,10 @@ def clean_and_render_place(
                     toggle_depth_hidden_objects(True)
                     toggle_depth_visible_objects(False)
                     toggle_probe_visible_objects(False)
-                    scene.view_settings.view_transform = "Filmic"
+                    scene.view_settings.view_transform = "Khronos PBR Neutral"
+                    scene.sequencer_colorspace_settings.name = (
+                        "Khronos PBR Neutral sRGB"
+                    )
 
                     reenable_hidden_meshes(place_info)
                     hide_meshes_for_camera(place_info, camera_object.name, False)
@@ -240,6 +242,7 @@ def clean_and_render_place(
                     toggle_depth_visible_objects(True)
                     toggle_probe_visible_objects(False)
                     scene.view_settings.view_transform = "Raw"
+                    scene.sequencer_colorspace_settings.name = "sRGB"
 
                     reenable_hidden_meshes(place_info)
                     hide_meshes_for_camera(place_info, camera_object.name, True)
@@ -254,7 +257,10 @@ def clean_and_render_place(
                         fileNamePost="_depth",
                     )
 
-                    scene.view_settings.view_transform = "Filmic"
+                    scene.view_settings.view_transform = "Khronos PBR Neutral"
+                    scene.sequencer_colorspace_settings.name = (
+                        "Khronos PBR Neutral sRGB"
+                    )
 
                     reenable_hidden_meshes(place_info)
 
