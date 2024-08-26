@@ -27,24 +27,25 @@ def export_model():
     full_filename = parts[-1]
     full_filename_parts = full_filename.split(".")
     filename_name = full_filename_parts[-2]
-    this_place_name = filename_name
+    this_model_name = filename_name
 
     # Get model names from folder names (folders with index files)
     model_names = []
 
-    with os.scandir(grandparent_folder_path) as it:
-        for entry in it:
-            if entry.is_dir():
-                looped_model_has_index_file = False
+    with os.scandir(grandparent_folder_path) as directory_iterator:
+        for directory in directory_iterator:
+            if directory.is_dir():
+                looped_model_has_main_file = False
                 with os.scandir(
-                    f"{grandparent_folder_path}{os.sep}{entry.name}"
+                    f"{grandparent_folder_path}{os.sep}{directory.name}"
                 ) as model_folder:
+                    looped_model_name = directory.name
                     for model_file in model_folder:
                         if not model_file.name.startswith(".") and model_file.is_file():
-                            if model_file.name.startswith("index"):
-                                looped_model_has_index_file = True
-                if looped_model_has_index_file:
-                    model_names.append(entry.name)
+                            if model_file.name.startswith(looped_model_name):
+                                looped_model_has_main_file = True
+                if looped_model_has_main_file:
+                    model_names.append(looped_model_name)
 
     animation_names = []
     bone_names = []
@@ -54,7 +55,6 @@ def export_model():
 
     # Loop through all selected objects
     for looped_object in bpy.context.selected_objects:
-
         if looped_object.type == "MESH":
             mesh_names.append(looped_object.name)
 
@@ -95,13 +95,12 @@ def export_model():
         export_animations=True,
         export_lights=False,
         use_selection=True,
-        filepath=parent_folder_path + os.sep + this_place_name + ".glb",
+        filepath=parent_folder_path + os.sep + this_model_name + ".glb",
     )
 
     # Save index file
-    with open(parent_folder_path + os.sep + this_place_name + ".ts", "w") as file:
-
-        file.write(f'import modelFile from "./{this_place_name}.glb";\n\n')
+    with open(parent_folder_path + os.sep + this_model_name + ".ts", "w") as file:
+        file.write(f'import modelFile from "./{this_model_name}.glb";\n\n')
 
         # animation_names
         # bone_names
@@ -158,12 +157,11 @@ def export_model():
 
         # grandparent_folder_path
 
-    # Save all places index file
-    with open(grandparent_folder_path + os.sep + "places.ts", "w") as file:
-
+    # Save all models index file (models.ts)
+    with open(grandparent_folder_path + os.sep + "models.ts", "w") as file:
         for looped_name in model_names:
             file.write(
-                f'import {{ modelInfo as {looped_name}Info }} from "./{looped_name}";\n'
+                f'import {{ modelInfo as {looped_name}Info }} from "./{looped_name}/{looped_name}";\n'
             )
 
         file.write("\n")

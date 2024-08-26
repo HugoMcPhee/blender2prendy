@@ -21,7 +21,6 @@ def save_typescript_files(
 
     # Save index file
     with open(parent_folder_path + os.sep + this_place_name + ".ts", "w") as file:
-
         file.write(f'import modelFile from "./{this_place_name}.glb";\n\n')
 
         # Import videos
@@ -29,7 +28,6 @@ def save_typescript_files(
 
         # Import probes
         for looped_name in camera_names:
-
             # import converted .env files (instead of hdr)
             file.write(
                 f'import {looped_name}_probe_image from "./{looped_name}_probe.env";\n'
@@ -153,10 +151,9 @@ def save_typescript_files(
 
     # Save all places index file
     with open(grandparent_folder_path + os.sep + "places.ts", "w") as file:
-
         for looped_name in place_names:
             file.write(
-                f'import {{ placeInfo as {looped_name}Info }} from "./{looped_name}";\n'
+                f'import {{ placeInfo as {looped_name}Info }} from "./{looped_name}/{looped_name}";\n'
             )
 
         file.write("\n")
