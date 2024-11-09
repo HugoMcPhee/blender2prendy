@@ -1,5 +1,5 @@
-from ..select_object import select_object
-from ..get_things import get_collections
+from ..utils.select_object import select_object
+from ..utils.getters.get_things import get_collections
 import bpy
 
 TEMP_CURVE_PREFIX = "temp_renamed_curve_"

@@ -1,5 +1,5 @@
 import bpy
-from ..get_things import get_scene, get_collections, get_view_layer
+from .getters.get_things import get_scene, get_collections, get_view_layer
 
 
 # from Robert Gützkow at https://blender.stackexchange.com/a/160758
@@ -10,6 +10,23 @@ def include_only_one_collection(
 
     for layer_collection in view_layer.layer_collection.children:
         if layer_collection.collection != collection_to_include:
+            layer_collection.exclude = True
+        else:
+            layer_collection.exclude = False
+
+
+def include_only_two_collections(
+    view_layer: bpy.types.ViewLayer,
+    collection_to_include_a: bpy.types.Collection,
+    collection_to_include_b: bpy.types.Collection,
+):
+    view_layer = get_view_layer()
+
+    for layer_collection in view_layer.layer_collection.children:
+        if (
+            layer_collection.collection != collection_to_include_a
+            and layer_collection.collection != collection_to_include_b
+        ):
             layer_collection.exclude = True
         else:
             layer_collection.exclude = False
@@ -41,7 +58,7 @@ def add_collection_to_exportable_collection(new_name):
         collections["Exportable"].children.link(collections.new(new_name))
 
 
-def add_collection_to_cameras(new_name):
+def add_collection_folder_to_cameras(new_name):
     collections = get_collections()
     if new_name not in collections["cameras"].children:
         collections["cameras"].children.link(collections.new(new_name))

@@ -1,12 +1,8 @@
-from ..dump import dump
-from ..get_things import get_collections, get_scene
-from ..get_applied_world_matrix import get_applied_world_matrix
-import bpy
-import bmesh
-from mathutils.bvhtree import BVHTree
-import mathutils
-from mathutils import Vector, Matrix, Quaternion
-import time
+from mathutils import Vector
+
+from ....utils.dump import dump
+from ....utils.getters.get_applied_world_matrix import get_applied_world_matrix
+from ....utils.getters.get_things import get_collections, get_scene
 
 
 def get_point_infront_of_cam(camera, distance):

@@ -1,4 +1,4 @@
-# blendergametools
+# blender to prendy
 
 blender addon tools for making things for a prendy prerendered backdrop game
 

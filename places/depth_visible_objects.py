@@ -1,5 +1,6 @@
 import bpy
-from ..get_things import get_view_layer
+
+from ..utils.getters.get_things import get_view_layer
 
 
 def toggle_depth_hidden_objects(isToggled=True):

@@ -1,13 +1,13 @@
 import bpy
 
-from ..get_things import get_collections, get_scene, get_view_layer
-from .cam_background import setup_cam_background
-from .collections import (
+from ..utils.getters.get_things import get_collections, get_scene, get_view_layer
+from ..places.cam_background import setup_cam_background
+from ..utils.collections import (
     add_collection_to_exportable_collection,
     add_collection_to_scene,
     enable_all_child_collections,
 )
-from .place_info import PlaceInfo
+from .place_info import place_info
 from .probes import setup_camera_probes
 from .update_items_and_variables import update_items_and_variables
 
@@ -16,8 +16,8 @@ from .update_items_and_variables import update_items_and_variables
 # Setup everything
 
 
-def setup_video_rendering(place_info: PlaceInfo):
-    update_items_and_variables(place_info)
+def setup_video_rendering():
+    update_items_and_variables()
 
     scene = get_scene()
 
@@ -37,7 +37,7 @@ def setup_video_rendering(place_info: PlaceInfo):
     scene.render.use_persistent_data = True
 
 
-def setup_place(place_info: PlaceInfo, the_render_quality, the_framerate):
+def setup_place(the_render_quality, the_framerate):
     scene = get_scene()
 
     # -------------------------------------------------
@@ -54,7 +54,7 @@ def setup_place(place_info: PlaceInfo, the_render_quality, the_framerate):
     add_collection_to_scene("Details")
 
     enable_all_child_collections("Exportable")
-    update_items_and_variables(place_info)
+    update_items_and_variables()
 
     # -------------------------------------------------
     # Set up options
@@ -300,4 +300,4 @@ def setup_place(place_info: PlaceInfo, the_render_quality, the_framerate):
     # NOTE maybe FIXME ? this broke going from blender 3.3 to 4.0
     # add_depth_switch_driver(tree.nodes["Denoise"], "mute", False, True)
     # Set options for video rendering (now that the nodes are created)
-    setup_video_rendering(place_info)
+    setup_video_rendering()

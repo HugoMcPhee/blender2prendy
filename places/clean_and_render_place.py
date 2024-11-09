@@ -3,37 +3,40 @@ import shutil
 import subprocess
 import bpy
 
-from ..get_things import get_collections, get_scene, get_view_layer
-from .cam_background import setup_cam_background
-from .collections import include_only_one_collection
-from .combine_videos import combine_videos
-from .convert_exportable_curves import (
+from ..utils.getters.get_things import get_collections, get_scene, get_view_layer
+from ..places.cam_background import setup_cam_background
+from ..utils.collections import (
+    include_only_one_collection,
+    include_only_two_collections,
+)
+from ..places.combine_videos import combine_videos
+from ..places.convert_exportable_curves import (
     convert_floor_curves,
     delete_meshes,
     revert_curve_names,
 )
-from .custom_render_video import custom_render_video
-from .place_info import PlaceInfo
-from .places import (
+from ..places.custom_render_video import custom_render_video
+from ..places.place_info import place_info
+from ..places.places import (
     setup_video_rendering,
     update_items_and_variables,
 )
-from .hide_meshes import (
+from ..places.hide_meshes import (
     hide_meshes_for_camera,
     reenable_all_meshes,
     reenable_hidden_meshes,
 )
-from .depth_visible_objects import (
+from ..places.depth_visible_objects import (
     toggle_depth_hidden_objects,
     toggle_depth_visible_objects,
     toggle_world_volume,
 )
-from .probes import (
+from ..places.probes import (
     setup_camera_probes,
     setup_probe_rendering,
     toggle_probe_visible_objects,
 )
-from .save_typescript_files import save_typescript_files
+from ..places.save_typescript_files import save_typescript_files
 
 # -------------------------------------------------
 # Original clean and render place
@@ -41,17 +44,17 @@ from .save_typescript_files import save_typescript_files
 
 
 def clean_and_render_place(
-    place_info: PlaceInfo,
     should_rerender,
     should_overwrite_render,
     should_convert_probes,
     the_best_lighting_frame,
+    should_make_details_gltf,
 ):
     scene = get_scene()
     collections = get_collections()
     view_layer = get_view_layer()
 
-    update_items_and_variables(place_info)
+    update_items_and_variables()
 
     # Change active collection To Exportable
 
@@ -87,7 +90,34 @@ def clean_and_render_place(
         + place_info.this_place_name
         + ".glb",
         use_selection=True,
+        export_hierarchy_full_collections=True,
     )
+
+    # If we want to export the details gltf
+    if should_make_details_gltf:
+        collection_to_include_a = collections["Exportable"]
+        collection_to_include_b = collections["Details"]
+        include_only_two_collections(
+            view_layer, collection_to_include_a, collection_to_include_b
+        )
+
+        for obj in collections["Details"].all_objects:
+            # check if it can be selected first:
+            # if obj.type == "MESH":
+            obj.select_set(True)
+        bpy.ops.export_scene.gltf(
+            export_format="GLB",
+            export_cameras=True,
+            export_apply=True,
+            export_animations=True,
+            filepath=place_info.parent_folder_path
+            + os.sep
+            + place_info.this_place_name
+            + "_details"
+            + ".glb",
+            use_selection=True,
+            export_hierarchy_full_collections=True,
+        )
 
     # delete_meshes(temporary_wall_meshes_to_export)
     delete_meshes(temporary_floor_meshes_to_export)
@@ -131,7 +161,7 @@ def clean_and_render_place(
 
         if should_rerender:
             print(f"Set camera {looped_object.name}")
-            reenable_all_meshes(place_info)
+            reenable_all_meshes()
             # render probe
             if not os.path.isfile(probe_output_path) or should_overwrite_render:
                 scene.camera = probe_object
@@ -182,7 +212,7 @@ def clean_and_render_place(
                     scene.camera.data.clip_start = 0.1
                     scene.camera.data.clip_end = 10000
 
-                    setup_video_rendering(place_info)
+                    setup_video_rendering()
                     # toggle the depth toggle off
                     scene.node_tree.nodes["switch_depth"].check = False
                     toggle_world_volume(True)
@@ -194,8 +224,8 @@ def clean_and_render_place(
                         "Khronos PBR Neutral sRGB"
                     )
 
-                    reenable_hidden_meshes(place_info)
-                    hide_meshes_for_camera(place_info, camera_object.name, False)
+                    reenable_hidden_meshes()
+                    hide_meshes_for_camera(camera_object.name, False)
 
                     setup_cam_background()
                     # render without the depth name
@@ -205,10 +235,9 @@ def clean_and_render_place(
                         chosen_framerate=place_info.chosen_framerate,
                         renders_folder_path=place_info.renders_folder_path,
                         segments_info=place_info.segments_info,
-                        fileNamePost="",
                     )
 
-                    reenable_hidden_meshes(place_info)
+                    reenable_hidden_meshes()
 
                     scene.camera.data.clip_start = originalClipStart
                     scene.camera.data.clip_end = originalClipEnd
@@ -232,7 +261,7 @@ def clean_and_render_place(
                     # scene.camera.data.clip_start = 0.1
                     # scene.camera.data.clip_end = 50
 
-                    setup_video_rendering(place_info)
+                    setup_video_rendering()
                     scene.camera = camera_object
                     # toggle the depth toggle on
                     scene.node_tree.nodes["switch_depth"].check = True
@@ -244,8 +273,8 @@ def clean_and_render_place(
                     scene.view_settings.view_transform = "Raw"
                     scene.sequencer_colorspace_settings.name = "sRGB"
 
-                    reenable_hidden_meshes(place_info)
-                    hide_meshes_for_camera(place_info, camera_object.name, True)
+                    reenable_hidden_meshes()
+                    hide_meshes_for_camera(camera_object.name, True)
 
                     # customRenderVideo(video_output_path_with_depth)
                     custom_render_video(
@@ -254,7 +283,7 @@ def clean_and_render_place(
                         chosen_framerate=place_info.chosen_framerate,
                         renders_folder_path=place_info.renders_folder_path,
                         segments_info=place_info.segments_info,
-                        fileNamePost="_depth",
+                        isDepth=True,
                     )
 
                     scene.view_settings.view_transform = "Khronos PBR Neutral"
@@ -262,13 +291,13 @@ def clean_and_render_place(
                         "Khronos PBR Neutral sRGB"
                     )
 
-                    reenable_hidden_meshes(place_info)
+                    reenable_hidden_meshes()
 
                     # scene.camera.data.clip_start = originalClipStart
                     # scene.camera.data.clip_end = originalClipEnd
 
             # setup_probe_rendering
-            reenable_all_meshes(place_info)
+            reenable_all_meshes()
 
     # create join instructions for videos, and join videos
 

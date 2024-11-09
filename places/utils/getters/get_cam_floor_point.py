@@ -1,14 +1,10 @@
-from .get_point_infront_of_cam import get_point_infront_of_cam
-from ..dump import dump
-from ..get_things import get_collections, get_scene
-from ..get_applied_world_matrix import get_applied_world_matrix
 import bpy
-import bmesh
-from mathutils.bvhtree import BVHTree
-import mathutils
-from mathutils import Vector, Matrix, Quaternion
-import time
+from mathutils import Vector
 
+from ....utils.dump import dump
+from ....utils.getters.get_applied_world_matrix import get_applied_world_matrix
+from ....utils.getters.get_things import get_collections, get_scene
+from ....places.utils.getters.get_point_infront_of_cam import get_point_infront_of_cam
 
 # the epsilon value for the BVHTree calculations
 EPSILON = 0.00001

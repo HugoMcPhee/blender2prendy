@@ -1,9 +1,9 @@
 import bpy
 from bpy.props import IntProperty, EnumProperty, PointerProperty
 from bpy.types import Panel, Operator, PropertyGroup
-from .make_lowpoly import make_lowpoly
-from .setup_model import setup_model
-from .export_model import export_model
+from ..models.make_lowpoly import make_lowpoly
+from ..models.setup_model import setup_model
+from ..models.export_model import export_model
 
 
 # ------------------------------------------------------------------------

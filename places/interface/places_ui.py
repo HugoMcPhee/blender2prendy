@@ -4,25 +4,30 @@ import bpy
 from bpy.props import BoolProperty, EnumProperty, IntProperty, PointerProperty
 from bpy.types import Operator, Panel, PropertyGroup
 from bpy.utils import register_class, unregister_class
-from .clean_and_render_place import clean_and_render_place
 
-from .place_info import place_info
-from .places import setup_place
+from ...places.utils.checkers import is_non_pano_camera
+from ...places.clean_and_render_place import clean_and_render_place
 
-from ..get_things import get_collections
-from .collection_instances import focus_instance
-from .get_cam_floor_point import get_cam_floor_point
-from .make_cam_frustum_mesh import make_cam_frustum_mesh
-from .make_camcube import make_camcube
+from ..place_info import place_info
+from ..places import setup_place
+
+from ...utils.getters.get_things import get_collections
+from ..collection_instances import focus_instance
+from ..utils.getters.get_cam_floor_point import get_cam_floor_point
+from ..make_cam_frustum_mesh import make_cam_frustum_mesh
+from ..make_camcube import make_camcube
+from ..custom_props import custom_props_classes
 
 # -------------------------------------------------
 # Adding tool panel stuff
 # -------------------------------------------------
 
+# Handlers
+
 
 def on_update_show_camcubes(self, context):
     collections = get_collections()
-    # update_blender_refs()
+
     for looped_collection in collections["cameras"].children:
         for looped_cam_box in looped_collection.objects:
             # hide or show each camera collider mesh
@@ -48,6 +53,11 @@ class RenderTools_Properties(PropertyGroup):
     should_convert_probes: BoolProperty(
         name="Convert probes",
         description="Convert the .hdr to .ennv for babylonjs",
+        default=False,
+    )
+    should_make_details_gltf: BoolProperty(
+        name="Export details gtlf",
+        description="To use to generate camcubes with gltf2prendy",
         default=False,
     )
 
@@ -100,9 +110,10 @@ class RenderTools_Operator_SetupPlace(Operator):
 
     def execute(self, context):
         scene = context.scene
-        mytool = scene.my_tool
+        render_tool_info = scene.render_tool_info
         setup_place(
-            place_info, mytool.the_render_quality, int(mytool.my_framerate_enum)
+            render_tool_info.the_render_quality,
+            int(render_tool_info.my_framerate_enum),
         )
         return {"FINISHED"}
 
@@ -113,13 +124,13 @@ class RenderTools_Operator_RenderVideos(Operator):
 
     def execute(self, context):
         scene = context.scene
-        mytool = scene.my_tool
+        render_tool_info = scene.render_tool_info
         clean_and_render_place(
-            place_info,
-            mytool.should_rerender,
-            mytool.should_overwrite_render,
-            mytool.should_convert_probes,
-            mytool.the_best_lighting_frame,
+            render_tool_info.should_rerender,
+            render_tool_info.should_overwrite_render,
+            render_tool_info.should_convert_probes,
+            render_tool_info.the_best_lighting_frame,
+            render_tool_info.should_make_details_gltf,
         )
         return {"FINISHED"}
 
@@ -130,7 +141,7 @@ class RenderTools_Operator_MakeCamFrustumMesh(Operator):
 
     def execute(self, context):
         scene = context.scene
-        mytool = scene.my_tool  # to use properties set in the ui
+        render_tool_info = scene.render_tool_info  # to use properties set in the ui
         make_cam_frustum_mesh(scene.camera)
         return {"FINISHED"}
 
@@ -163,9 +174,9 @@ class RenderTools_Operator_MakeCameraCube(Operator):
         return {"FINISHED"}
 
 
-class RenderTools_Operator_TryNewScript(Operator):
-    bl_label = "Try New Script"
-    bl_idname = "wm.try_new_script"
+class RenderTools_Operator_GoToInstance(Operator):
+    bl_label = "Go To Instance"
+    bl_idname = "wm.go_to_instance"
 
     # @classmethod
     # def poll(cls, context):
@@ -195,13 +206,14 @@ class RenderTools_Panel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        mytool = scene.my_tool
+        mytool = scene.render_tool_info
 
         layout.operator("wm.setup_place", text="Setup Place", icon="SHADERFX")
         layout.operator("wm.render_videos", text="Make Place", icon="SCENE")
         layout.prop(mytool, "should_rerender")
         layout.prop(mytool, "should_overwrite_render")
         layout.prop(mytool, "should_convert_probes")
+        layout.prop(mytool, "should_make_details_gltf")
         layout.separator()
         layout.prop(mytool, "my_framerate_enum")
         layout.prop(mytool, "the_render_quality")
@@ -226,8 +238,8 @@ class RenderTools_Panel(Panel):
             icon="VIEW_CAMERA",
         )
         layout.operator(
-            "wm.try_new_script",
-            text="Try New Script",
+            "wm.go_to_instance",
+            text="Go To Instance",
             icon="OUTLINER_OB_GREASEPENCIL",
         )
 
@@ -237,16 +249,20 @@ class RenderTools_Panel(Panel):
 # ------------------------------------------------------------------------
 
 
+# -------------------------------------------------
+# Cameras ----------------------------------------
+# -------------------------------------------------
+
 # Toggle Segments for Cams --------------------------
 
 
 def toggle_all_segments(self, context):
-    for i, flag in enumerate(self.segment_toggles):
-        self.segment_toggles[i] = self.toggle_all_segments
+    for index, flag in enumerate(self.segment_toggles):
+        self.segment_toggles[index] = self.toggle_all_segments
     return None
 
 
-class SegmentTogglePanel(bpy.types.Panel):
+class SegmentToggle_Panel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Toggle Segments Panel"
@@ -257,78 +273,35 @@ class SegmentTogglePanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        theObject = context.object
-        should_show = theObject.type == "CAMERA" and theObject.data.type != "PANO"
-        return should_show
+        # should show if
+        return is_non_pano_camera(context.object)
 
     def draw(self, context):
         layout = self.layout
         column = layout.column()
+        cam_object = None
 
-        theObject = context.object
-        camera_object = None
+        if is_non_pano_camera(context.object):
+            cam_object = context.object
+            cam_name = cam_object.name
 
-        if theObject.type == "CAMERA" and theObject.data.type != "PANO":
-            camera_object = theObject
-
-            column.prop(camera_object, "toggle_all_segments", text="SELECT ALL")
+            column.prop(cam_object.data, "toggle_all_segments", text="SELECT ALL")
             column = layout.column(align=True)
-            for i, name in enumerate(place_info.segments_order):
+            for index, segment_name in enumerate(place_info.segments_order):
+
                 column.prop(
-                    camera_object, "segment_toggles", index=i, text=name, toggle=True
-                )
-
-
-# Toggle Mesh visiblity for Cams --------------------------
-# allow each mesh to be turned off for a camera
-def toggle_all_hidden_to_cams(self, context):
-    for i, flag in enumerate(self.hidden_to_cam_toggles):
-        self.hidden_to_cam_toggles[i] = self.toggle_all_hidden_to_cams
-    return None
-
-
-class HiddenToCamTogglePanel(bpy.types.Panel):
-    """Creates a Panel in the Object properties window"""
-
-    bl_label = "Toggle Hidden To Cams"
-    bl_idname = "OBJECT_PT_toggle_hidden_to_cams"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "data"
-
-    @classmethod
-    def poll(cls, context):
-        theObject = context.object
-
-        should_show = (
-            theObject.type == "MESH" or theObject.instance_type == "COLLECTION"
-        )
-        return should_show
-
-    def draw(self, context):
-        layout = self.layout
-        column = layout.column()
-
-        theObject = context.object
-        mesh_object = None
-
-        if theObject.type == "MESH" or theObject.instance_type == "COLLECTION":
-            mesh_object = theObject
-            column.prop(mesh_object, "toggle_all_hidden_to_cams", text="SELECT ALL")
-            column = layout.column(align=True)
-            for i, name in enumerate(place_info.camera_names):
-                column.prop(
-                    mesh_object,
-                    "hidden_to_cam_toggles",
-                    index=i,
-                    text=name,
+                    cam_object.data,
+                    "segment_toggles",
+                    index=index,
+                    text=segment_name,
                     toggle=True,
                 )
+                # TODO Collection of cam segment infos, each one as a row
 
 
 classes = (
     # properties
-    RenderTools_Properties,
+    RenderTools_Properties,  # This is similar to place info
     #  buttons
     RenderTools_Operator_SetupPlace,
     RenderTools_Operator_RenderVideos,
@@ -336,27 +309,24 @@ classes = (
     RenderTools_Operator_CheckCamFloorPoint,
     # panels
     RenderTools_Panel,
-    SegmentTogglePanel,
-    HiddenToCamTogglePanel,
+    SegmentToggle_Panel,
     RenderTools_Operator_MakeCameraCube,
-    RenderTools_Operator_TryNewScript,
+    RenderTools_Operator_GoToInstance,
 )
+
+all_classes = classes + tuple(custom_props_classes)
 
 
 def register_places():
-    for loopedClass in classes:
-        register_class(loopedClass)
 
-    bpy.types.Scene.my_tool = PointerProperty(type=RenderTools_Properties)
-    bpy.types.Object.toggle_all_segments = BoolProperty(update=toggle_all_segments)
+    for the_class in all_classes:
+        register_class(the_class)
 
-    # Adding custom camera props
-    bpy.types.Camera.my_prop = bpy.props.BoolProperty(
-        name="My Property", description="This is my bpy.props boolean prop"
-    )
+    bpy.types.Scene.render_tool_info = PointerProperty(type=RenderTools_Properties)
+    bpy.types.Camera.toggle_all_segments = BoolProperty(update=toggle_all_segments)
 
 
 def unregister_places():
-    for cls in reversed(classes):
-        unregister_class(cls)
-    del bpy.types.Scene.my_tool
+    for the_class in reversed(all_classes):
+        unregister_class(the_class)
+    del bpy.types.Scene.render_tool_info

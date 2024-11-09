@@ -27,11 +27,27 @@ def save_typescript_files(
         file.write(f'import backdropVideoFile from "./backdrops.mp4";\n')
 
         # Import probes
-        for looped_name in camera_names:
+        for cam_name in camera_names:
             # import converted .env files (instead of hdr)
             file.write(
-                f'import {looped_name}_probe_image from "./{looped_name}_probe.env";\n'
+                f'import {cam_name}_probe_image from "./{cam_name}_probe.env";\n'
             )
+        file.write("\n")
+
+        # Import backdrop textures
+        for cam_name in camera_names:
+            # Example: (NOTE: 'start' is the segment name here)
+            # import first_cam_start_color_image from "./first_cam_start_color.ktx2";
+            # import first_cam_start_depth_image from "./first_cam_start_depth.ktx2";
+            for segment_name in segments_for_cams[cam_name]:
+                file_name_start = f"{cam_name}_{segment_name}"
+
+                file.write(
+                    f'import {file_name_start}_color_image from "./{file_name_start}_color.env";\n'
+                )
+                file.write(
+                    f'import {file_name_start}_depth_image from "./{file_name_start}_depth.env";\n'
+                )
         file.write("\n")
 
         # probesByCamera
@@ -40,6 +56,38 @@ def save_typescript_files(
         for cam_name in camera_names:
             file.write(f"  {cam_name}: { cam_name}_probe_image,\n")
         file.write("};\n")
+
+        # probesByCamera
+
+        file.write("export const probesByCamera = {\n")
+        for cam_name in camera_names:
+            file.write(f"  {cam_name}: { cam_name}_probe_image,\n")
+        file.write("};\n")
+
+        # backdropsByCamera
+        # Example:
+        # export const backdropsByCamera = {
+        #     first_cam: {
+        #         start: {
+        #         color: first_cam_color_image,
+        #         depth: first_cam_depth_image,
+        #         frameRate: 12,
+        #         totalFrames: 14,
+        #         maxFramesPerRow: 8,
+        #         },
+        #     },
+        #     waterfall_cam: {
+        #         start: {
+        #         color: waterfall_cam_color_image,
+        #         depth: waterfall_cam_depth_image,
+        #         frameRate: 1,
+        #         totalFrames: 1,
+        #         maxFramesPerRow: 1,
+        #         },
+        #     },
+        #     };
+
+        
 
         # segmentTimesByCamera
         # first_segment_name = segments_for_cams[cam_name]
@@ -94,32 +142,32 @@ def save_typescript_files(
 
         # wallNames array
         file.write("export const wallNames = [")
-        for looped_name in wall_names:
-            file.write(f'\n  "{ looped_name}",')
+        for cam_name in wall_names:
+            file.write(f'\n  "{ cam_name}",')
         file.write("\n] as const;\n\n")
 
         # floorNames array
         file.write("export const floorNames = [")
-        for looped_name in floor_names:
-            file.write(f'\n  "{ looped_name}",')
+        for cam_name in floor_names:
+            file.write(f'\n  "{ cam_name}",')
         file.write("\n] as const;\n\n")
 
         # triggerNames array
         file.write("export const triggerNames = [")
-        for looped_name in trigger_names:
-            file.write(f'\n  "{ looped_name}",')
+        for cam_name in trigger_names:
+            file.write(f'\n  "{ cam_name}",')
         file.write("\n] as const;\n\n")
 
         # spotNames array
         file.write("export const spotNames = [")
-        for looped_name in spot_names:
-            file.write(f'\n  "{ looped_name}",')
+        for cam_name in spot_names:
+            file.write(f'\n  "{ cam_name}",')
         file.write("\n] as const;\n\n")
 
         # soundspotNames array
         file.write("export const soundspotNames = [")
-        for looped_name in soundspot_names:
-            file.write(f'\n  "{ looped_name}",')
+        for cam_name in soundspot_names:
+            file.write(f'\n  "{ cam_name}",')
         file.write("\n] as const;\n\n")
 
         file.write(
@@ -151,16 +199,16 @@ def save_typescript_files(
 
     # Save all places index file
     with open(grandparent_folder_path + os.sep + "places.ts", "w") as file:
-        for looped_name in place_names:
+        for cam_name in place_names:
             file.write(
-                f'import {{ placeInfo as {looped_name}Info }} from "./{looped_name}/{looped_name}";\n'
+                f'import {{ placeInfo as {cam_name}Info }} from "./{cam_name}/{cam_name}";\n'
             )
 
         file.write("\n")
         file.write("export const placeInfoByName = {\n")
 
-        for looped_name in place_names:
-            file.write(f"  {looped_name}: {looped_name}Info,\n")
+        for cam_name in place_names:
+            file.write(f"  {cam_name}: {cam_name}Info,\n")
         file.write("} as const;\n")
 
         file.write(
@@ -207,6 +255,6 @@ def save_typescript_files(
         )
 
         file.write("\n" + "export const allCameraNames = [\n")
-        for looped_name in place_names:
-            file.write(f"  ...{looped_name}Info.cameraNames,\n")
+        for cam_name in place_names:
+            file.write(f"  ...{cam_name}Info.cameraNames,\n")
         file.write("];\n")

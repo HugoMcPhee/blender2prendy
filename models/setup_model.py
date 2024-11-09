@@ -1,5 +1,4 @@
 import bpy
-import os
 from math import radians
 from mathutils import Euler, Vector
 

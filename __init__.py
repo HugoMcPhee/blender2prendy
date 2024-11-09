@@ -22,15 +22,15 @@ bl_info = {
     "category": "Generic",
 }
 
-from .models import models
-from .places import places_ui
+from .models.models import register_models
+from .places.interface.places_ui import register_places
 from .quick_cam_switch import register_quick_cam_switch, unregister_quick_cam_switch
 
 
 def register():
     print("registerrigngngn")
-    models.register_models()
-    places_ui.register_places()
+    register_models()
+    register_places()
     register_quick_cam_switch()
 
 

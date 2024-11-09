@@ -1,6 +1,6 @@
 import bpy
 import mathutils
-from .get_cam_floor_point import get_cam_floor_point
+from .utils.getters.get_cam_floor_point import get_cam_floor_point
 from .make_cam_frustum_mesh import make_cam_frustum_mesh
 
 
@@ -11,7 +11,12 @@ camcube_height = 3
 # NOTE Can do "edge slide" in blender to make the cam cube shorter without messing with the shape from the camera perspective
 
 
+# NOTE this requires booltooles addon to work, and wil move to the chrom babylonjs way of making them soon
 def make_camcube(camera):
+    # return early since bool tools is not installed
+    if not bpy.context.preferences.addons.get("booltool"):
+        return
+
     #  get the cam point
     cam_floor_point = get_cam_floor_point(camera)
     #  make a plane called temp_flat_cube
@@ -27,7 +32,7 @@ def make_camcube(camera):
     print("got to here")
     temp_flat_cube = bpy.context.active_object
 
-    temp_flat_cube.name = "camBox_auto"
+    temp_flat_cube.name = "cambox_auto"
     bpy.ops.object.mode_set(mode="EDIT")
 
     #  in edit mode, select all , and extrude it up a little bit
@@ -74,7 +79,8 @@ def make_camcube(camera):
     temp_flat_cube.select_set(True)
     bpy.context.view_layer.objects.active = temp_flat_cube
     bpy.ops.object.modifier_apply(modifier="Auto Boolean")
-    bpy.ops.object.booltool_auto_intersect()
+    # FIXME this requires booltooles addon to work
+    # bpy.ops.object.booltool_auto_intersect()
     bpy.context.view_layer.objects.active = temp_flat_cube
 
     #  make it a little shorted inside the camera visible view, and make it taller

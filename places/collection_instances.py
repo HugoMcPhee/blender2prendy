@@ -2,7 +2,7 @@ import bpy
 import os
 from math import radians
 from mathutils import Euler, Vector
-from ..dump import dump
+from ..utils.dump import dump
 
 saved_view_matrix = None
 saved_view_rotation = None

@@ -1,5 +1,5 @@
 import bpy
-from ..get_things import get_collections, get_scene, get_view_layer
+from ..utils.getters.get_things import get_collections, get_scene, get_view_layer
 
 
 def setup_cam_background():
