@@ -72,8 +72,8 @@ def make_default_camera():
 def setup_and_get_cameras_info():
     collections = get_collections()
 
-    if not get_has_any_cameras():
-        make_default_camera()
+    # if not get_has_any_cameras():
+    #     make_default_camera()
 
     # turn camera objects into collections if they're only objects
     for object in collections["cameras"].objects:

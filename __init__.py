@@ -22,20 +22,20 @@ bl_info = {
     "category": "Generic",
 }
 
-from .models.models import register_models
-from .places.interface.places_ui import register_places
+from .models.models import register_models, unregister_models
+from .places.interface.places_ui import register_places, unregister_places
 from .quick_cam_switch import register_quick_cam_switch, unregister_quick_cam_switch
 
 
 def register():
-    print("registerrigngngn")
+    print("registering blender2prendy")
     register_models()
     register_places()
     register_quick_cam_switch()
 
 
 def unregister():
-    print("unregisterrigngn")
-    models.unregister_models()
-    places_ui.unregister_places()
+    print("unregistering blender2prendy")
+    unregister_models()
+    unregister_places()
     unregister_quick_cam_switch()

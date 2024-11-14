@@ -45,3 +45,32 @@ def toggle_world_volume(isToggled=True):
         density_input.default_value = 0
         original_world_volume_color = volume_color_input.default_value
         volume_color_input.default_value = (0, 0, 0, 1)
+
+
+def set_faster_depth_materials():
+    # Create a simple diffuse material for override
+    override_material = bpy.data.materials.new(name="OverrideMaterial")
+    override_material.use_nodes = True
+    node_tree = override_material.node_tree
+
+    # Clear existing nodes and create a simple Diffuse BSDF
+    node_tree.nodes.clear()
+    diffuse_node = node_tree.nodes.new(type="ShaderNodeBsdfDiffuse")
+    output_node = node_tree.nodes.new(type="ShaderNodeOutputMaterial")
+
+    # Connect the Diffuse BSDF to the Material Output
+    node_tree.links.new(diffuse_node.outputs["BSDF"], output_node.inputs["Surface"])
+
+    # Apply Material Override
+    view_layer = bpy.context.view_layer
+    view_layer.material_override = override_material
+
+    # Optimize rendering settings
+    # bpy.context.scene.cycles.samples = 1  # Minimal samples for speed
+
+
+def unset_faster_depth_materials():
+    view_layer = bpy.context.view_layer
+
+    # Remove Material Override after rendering
+    view_layer.material_override = None

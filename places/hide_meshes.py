@@ -3,7 +3,7 @@ import bpy
 from .place_info import PlaceInfo, place_info
 
 
-# not needed! might help if stopping "make videos" before it finshed
+# not needed! might help if stopping "make backdrops" before it finshed
 def reenable_all_meshes():
     for cam_name in place_info.hidden_meshes_by_cam:
         for mesh_name in place_info.hidden_meshes_by_cam[cam_name]:

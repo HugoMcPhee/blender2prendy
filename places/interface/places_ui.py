@@ -43,11 +43,11 @@ def on_update_show_camcubes(self, context):
 
 class RenderTools_Properties(PropertyGroup):
     should_rerender: BoolProperty(
-        name="Make videos", description="Render videos?", default=False
+        name="Make backdrops", description="Render backdrops?", default=False
     )
     should_overwrite_render: BoolProperty(
         name="Overwrite renders",
-        description="If false, only missing videos / hdr images are rendered",
+        description="If false, only missing backdrops / hdr images are rendered",
         default=False,
     )
     should_convert_probes: BoolProperty(

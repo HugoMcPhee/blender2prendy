@@ -3,6 +3,8 @@ import shutil
 import subprocess
 import bpy
 
+from ..utils.folders import get_plugin_folder
+
 from ..utils.getters.get_things import get_collections, get_scene, get_view_layer
 from ..places.cam_background import setup_cam_background
 from ..utils.collections import (
@@ -27,9 +29,11 @@ from ..places.hide_meshes import (
     reenable_hidden_meshes,
 )
 from ..places.depth_visible_objects import (
+    set_faster_depth_materials,
     toggle_depth_hidden_objects,
     toggle_depth_visible_objects,
     toggle_world_volume,
+    unset_faster_depth_materials,
 )
 from ..places.probes import (
     setup_camera_probes,
@@ -37,6 +41,76 @@ from ..places.probes import (
     toggle_probe_visible_objects,
 )
 from ..places.save_typescript_files import save_typescript_files
+
+
+def get_render_frames_folder_path(camName, segmentName, is_depth_video=False):
+    backdrop_type = "color"
+    if is_depth_video:
+        backdrop_type = "depth"
+    return os.path.join(
+        place_info.renders_folder_path, camName, segmentName, backdrop_type
+    )
+
+
+def get_render_exists(camName, segmentName, is_depth_video=False):
+    path = get_render_frames_folder_path(camName, segmentName, is_depth_video)
+    return os.path.isdir(path)
+
+
+def combine_frames_to_images(camName, segmentName, is_depth_video=False):
+    # Run the node script to combine the frames into images
+    plugin_path = get_plugin_folder()
+    rendered_frames_path = get_render_frames_folder_path(
+        camName, segmentName, is_depth_video
+    )
+
+    node_script_path = os.path.join(
+        plugin_path, "nodeScripts", "combineFrames", "combineFrames.js"
+    )
+    subprocess.run(
+        ["node", node_script_path],
+        cwd=rendered_frames_path,
+    )
+    ktx2_arguments_string = "--bcmp"
+    # if is_depth_video:
+    #     ktx2_arguments_string = "--uastc --uastc_level 1 --astc"
+
+    # find all files in rendered_frames_path that have the extension .png
+    for file in os.listdir(rendered_frames_path):
+        if file.endswith(".png"):
+            # check if the file starts with "texture"
+            if not file.startswith("texture"):
+                continue
+            ktx2_file_name = file.replace(".png", ".ktx2")
+            make_ktx2_texture_command = (
+                f"toktx --2d {ktx2_arguments_string} {ktx2_file_name} {file}"
+            )
+            # convert the png to ktx2
+            print(f"running {make_ktx2_texture_command}")
+            subprocess.run(
+                make_ktx2_texture_command,
+                shell=True,
+                cwd=rendered_frames_path,
+            )
+
+            # move the new ktx2 file to the place folder , in the backdrops directory, and also rename the texture from texture1 to use the camName, segmentName, and backdrop_type with the number that used to be in the texture name
+
+            # if  place_info.parent_folder_path/backdrops doesn't exist, create it
+            if not os.path.exists(
+                os.path.join(place_info.parent_folder_path, "backdrops")
+            ):
+                os.makedirs(os.path.join(place_info.parent_folder_path, "backdrops"))
+
+            new_ktx2_file_path = os.path.join(
+                place_info.parent_folder_path,
+                "backdrops",
+                f"{camName}_{segmentName}_{file.replace('texture', '').replace('.png', '')}.ktx2",
+            )
+            shutil.move(
+                os.path.join(rendered_frames_path, ktx2_file_name),
+                new_ktx2_file_path,
+            )
+
 
 # -------------------------------------------------
 # Original clean and render place
@@ -147,16 +221,6 @@ def clean_and_render_place(
         )
         probe_output_path = f"{render_output_path_start}_probe.hdr"
 
-        def get_video_path(camName, segmentName, is_depth_video=False):
-            video_output_path_pre = (
-                f"{place_info.renders_folder_path}{os.sep}{camName}_{segmentName}"
-            )
-
-            if not is_depth_video:
-                return f"{video_output_path_pre}.mp4"
-            else:
-                return f"{video_output_path_pre}_depth.mp4"
-
         segment_names_for_cam = place_info.segments_for_cams[camera_object.name]
 
         if should_rerender:
@@ -195,12 +259,8 @@ def clean_and_render_place(
 
                 # render color videos
                 if (
-                    not os.path.isfile(
-                        get_video_path(
-                            camName=camera_object.name,
-                            segmentName=segment_name,
-                            is_depth_video=False,
-                        )
+                    not get_render_exists(
+                        camera_object.name, segment_name, is_depth_video=False
                     )
                     or should_overwrite_render
                 ):
@@ -242,14 +302,14 @@ def clean_and_render_place(
                     scene.camera.data.clip_start = originalClipStart
                     scene.camera.data.clip_end = originalClipEnd
 
+                # combine_frames_to_images(
+                #     camera_object.name, segment_name, is_depth_video=False
+                # )
+
                 # render depth video
                 if (
-                    not os.path.isfile(
-                        get_video_path(
-                            camName=camera_object.name,
-                            segmentName=segment_name,
-                            is_depth_video=True,
-                        )
+                    not get_render_exists(
+                        camera_object.name, segment_name, is_depth_video=True
                     )
                     or should_overwrite_render
                 ):
@@ -276,6 +336,8 @@ def clean_and_render_place(
                     reenable_hidden_meshes()
                     hide_meshes_for_camera(camera_object.name, True)
 
+                    set_faster_depth_materials()
+
                     # customRenderVideo(video_output_path_with_depth)
                     custom_render_video(
                         camName=camera_object.name,
@@ -286,6 +348,8 @@ def clean_and_render_place(
                         isDepth=True,
                     )
 
+                    unset_faster_depth_materials()
+
                     scene.view_settings.view_transform = "Khronos PBR Neutral"
                     scene.sequencer_colorspace_settings.name = (
                         "Khronos PBR Neutral sRGB"
@@ -295,6 +359,9 @@ def clean_and_render_place(
 
                     # scene.camera.data.clip_start = originalClipStart
                     # scene.camera.data.clip_end = originalClipEnd
+                combine_frames_to_images(
+                    camera_object.name, segment_name, is_depth_video=True
+                )
 
             # setup_probe_rendering
             reenable_all_meshes()
@@ -302,12 +369,12 @@ def clean_and_render_place(
     # create join instructions for videos, and join videos
 
     # combine all the camera names into a join_color_vids.txt and join_depth_vids.txt
-    combine_videos(
-        renders_folder_path=place_info.renders_folder_path,
-        place_folder_path=place_info.parent_folder_path,
-        camera_names=place_info.camera_names,
-        segments_for_cams=place_info.segments_for_cams,
-    )
+    # combine_videos(
+    #     renders_folder_path=place_info.renders_folder_path,
+    #     place_folder_path=place_info.parent_folder_path,
+    #     camera_names=place_info.camera_names,
+    #     segments_for_cams=place_info.segments_for_cams,
+    # )
 
     # Save the typescript files
     save_typescript_files(
