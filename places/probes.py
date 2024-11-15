@@ -11,7 +11,7 @@ def setup_probe_rendering():
     scene.render.resolution_y = 128
 
     scene.render.image_settings.file_format = "HDR"
-    scene.node_tree.nodes["Denoise"].use_hdr = True
+    # scene.node_tree.nodes["Denoise"].use_hdr = True
 
 
 def setup_camera_probes():

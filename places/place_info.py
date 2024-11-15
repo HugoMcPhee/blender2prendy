@@ -18,6 +18,7 @@ class Segment:
     time: float  # the render start time for the segment
     frameStart: int
     frameEnd: int
+    total_frames: int
 
 
 @dataclass

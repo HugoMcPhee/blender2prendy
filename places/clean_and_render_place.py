@@ -64,6 +64,10 @@ def combine_frames_to_images(camName, segmentName, is_depth_video=False):
         camName, segmentName, is_depth_video
     )
 
+    backdrop_type = "color"
+    if is_depth_video:
+        backdrop_type = "depth"
+
     node_script_path = os.path.join(
         plugin_path, "nodeScripts", "combineFrames", "combineFrames.js"
     )
@@ -72,8 +76,8 @@ def combine_frames_to_images(camName, segmentName, is_depth_video=False):
         cwd=rendered_frames_path,
     )
     ktx2_arguments_string = "--bcmp"
-    # if is_depth_video:
-    #     ktx2_arguments_string = "--uastc --uastc_level 1 --astc"
+    if is_depth_video:
+        ktx2_arguments_string = "--bcmp --target_type R --qlevel 5"
 
     # find all files in rendered_frames_path that have the extension .png
     for file in os.listdir(rendered_frames_path):
@@ -104,7 +108,7 @@ def combine_frames_to_images(camName, segmentName, is_depth_video=False):
             new_ktx2_file_path = os.path.join(
                 place_info.parent_folder_path,
                 "backdrops",
-                f"{camName}_{segmentName}_{file.replace('texture', '').replace('.png', '')}.ktx2",
+                f"{camName}_{segmentName}_{backdrop_type}_{file.replace('texture', '').replace('.png', '')}.ktx2",
             )
             shutil.move(
                 os.path.join(rendered_frames_path, ktx2_file_name),
@@ -302,9 +306,9 @@ def clean_and_render_place(
                     scene.camera.data.clip_start = originalClipStart
                     scene.camera.data.clip_end = originalClipEnd
 
-                # combine_frames_to_images(
-                #     camera_object.name, segment_name, is_depth_video=False
-                # )
+                combine_frames_to_images(
+                    camera_object.name, segment_name, is_depth_video=False
+                )
 
                 # render depth video
                 if (

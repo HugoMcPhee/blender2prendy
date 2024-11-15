@@ -58,12 +58,16 @@ def setup_and_get_segments_info():
         else:
             place_info.segments_order.append(edited_name)
 
+        total_scene_frames = next_marker_frame - marker.frame
+        total_frames = total_scene_frames / scene.frame_step
+
         place_info.segments_info[edited_name] = Segment(
             name=edited_name,
             duration=marker_duration,
             time=marker_time,
             frameStart=marker.frame,
             frameEnd=next_marker_frame,
+            total_frames=total_frames,
         )
 
         current_marker_index += 1

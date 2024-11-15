@@ -31,7 +31,7 @@ def setup_video_rendering():
     scene.render.ffmpeg.audio_codec = "NONE"
     scene.render.ffmpeg.constant_rate_factor = "PERC_LOSSLESS"
     scene.render.ffmpeg.gopsize = 4
-    scene.node_tree.nodes["Denoise"].use_hdr = True
+    # scene.node_tree.nodes["Denoise"].use_hdr = True
 
     # for faster performance
     scene.render.use_persistent_data = True
@@ -166,9 +166,9 @@ def setup_place(the_render_quality, the_framerate):
     min_node.location = 840, -200
 
     # create Denoise node
-    denoise_node = tree.nodes.new(type="CompositorNodeDenoise")
-    denoise_node.use_hdr = False
-    denoise_node.location = 300, 0
+    # denoise_node = tree.nodes.new(type="CompositorNodeDenoise")
+    # denoise_node.use_hdr = False
+    # denoise_node.location = 300, 0
 
     # create depth toggle switch node
     switch_depth_node = tree.nodes.new(type="CompositorNodeSwitch")
@@ -223,9 +223,9 @@ def setup_place(the_render_quality, the_framerate):
     # min to depth toggle switch
     links.new(min_node.outputs[0], switch_depth_node.inputs[1])
     # link render to denoiser
-    links.new(render_layers_node.outputs[3], denoise_node.inputs[0])
-    links.new(render_layers_node.outputs[4], denoise_node.inputs[1])
-    links.new(render_layers_node.outputs[5], denoise_node.inputs[2])
+    # links.new(render_layers_node.outputs[3], denoise_node.inputs[0])
+    # links.new(render_layers_node.outputs[4], denoise_node.inputs[1])
+    # links.new(render_layers_node.outputs[5], denoise_node.inputs[2])
 
     # link denoiser to switch
     # links.new(denoise_node.outputs[0], switch_node.inputs[0])

@@ -1,4 +1,5 @@
 import os
+from ..places.place_info import place_info
 
 
 def save_typescript_files(
@@ -19,12 +20,17 @@ def save_typescript_files(
 ):
     # Save the typescript files
 
+    BACKDROP_TYPES = ["color", "depth"]
+    TEXTURES_AMOUNT = (
+        2  # TODO make this recorded or calculate it based on framerate and duration
+    )
+
     # Save index file
     with open(parent_folder_path + os.sep + this_place_name + ".ts", "w") as file:
         file.write(f'import modelFile from "./{this_place_name}.glb";\n\n')
 
         # Import videos
-        file.write(f'import backdropVideoFile from "./backdrops.mp4";\n')
+        # file.write(f'import backdropVideoFile from "./backdrops.mp4";\n')
 
         # Import probes
         for cam_name in camera_names:
@@ -40,22 +46,71 @@ def save_typescript_files(
             # import first_cam_start_color_image from "./first_cam_start_color.ktx2";
             # import first_cam_start_depth_image from "./first_cam_start_depth.ktx2";
             for segment_name in segments_for_cams[cam_name]:
+
+                # The format is like this: first_cam_start_color_1
+
                 file_name_start = f"{cam_name}_{segment_name}"
 
-                file.write(
-                    f'import {file_name_start}_color_image from "./{file_name_start}_color.env";\n'
-                )
-                file.write(
-                    f'import {file_name_start}_depth_image from "./{file_name_start}_depth.env";\n'
-                )
+                for texture_index in range(TEXTURES_AMOUNT):
+                    texture_count = texture_index + 1
+                    for backdrop_type in BACKDROP_TYPES:
+                        file.write(
+                            f'import {file_name_start}_{backdrop_type}_{texture_count} from "./backdrops/{file_name_start}_{backdrop_type}_{texture_count}.ktx2";\n'
+                        )
         file.write("\n")
 
-        # probesByCamera
+        # backdropsByCamera
+        # Example:
+        # export const backdropsByCamera = {
+        # first_cam: {
+        #     start: {
+        #     frameRate: 12,
+        #     totalFrames: 20,
+        #     maxFramesPerRow: 4,
+        #     textures: [
+        #         { color: first_cam_start_color_1, depth: first_cam_start_depth_1 },
+        #         { color: first_cam_start_color_2, depth: first_cam_start_depth_2 },
+        #     ],
+        #     },
+        # },
+        # waterfall_cam: {
+        #     start: {
+        #     frameRate: 12,
+        #     totalFrames: 20,
+        #     maxFramesPerRow: 4,
+        #     textures: [
+        #         { color: waterfall_cam_start_color_1, depth: waterfall_cam_start_depth_1 },
+        #         { color: waterfall_cam_start_color_2, depth: waterfall_cam_start_depth_2 },
+        #     ],
+        #     },
+        # },
+        # };
 
-        file.write("export const probesByCamera = {\n")
+        MAX_FRAMES_PER_ROW = 4
+
+        file.write("export const backdropsByCamera = {\n")
         for cam_name in camera_names:
-            file.write(f"  {cam_name}: { cam_name}_probe_image,\n")
+            file.write(f'  "{cam_name}": {{\n')
+            for segment_name in segments_for_cams[cam_name]:
+                segment_info = segments_info[segment_name]
+                file.write(f'    "{segment_name}": {{\n')
+                file.write(f"      frameRate: {place_info.chosen_framerate},\n")
+                file.write(f"      totalFrames: {segment_info.total_frames},\n")
+                file.write(f"      maxFramesPerRow: {MAX_FRAMES_PER_ROW},\n")
+                file.write(f"      textures: [\n")
+                for index in range(TEXTURES_AMOUNT):
+                    texture_count = index + 1
+                    file.write("        {\n")
+                    for backdrop_type in BACKDROP_TYPES:
+                        file.write(
+                            f"          {backdrop_type}: {cam_name}_{segment_name}_{backdrop_type}_{texture_count},\n"
+                        )
+                    file.write("        },\n")
+                file.write("      ],\n")
+                file.write("    },\n")
+            file.write("  },\n")
         file.write("};\n")
+        file.write("\n")
 
         # probesByCamera
 
@@ -87,8 +142,6 @@ def save_typescript_files(
         #     },
         #     };
 
-        
-
         # segmentTimesByCamera
         # first_segment_name = segments_for_cams[cam_name]
         # first_segment_info = segments_info[first_segment_name]
@@ -119,9 +172,9 @@ def save_typescript_files(
         )
 
         # videoFiles
-        file.write(
-            "export const videoFiles = {\n" + "  backdrop: backdropVideoFile,\n" + "}\n"
-        )
+        # file.write(
+        #     "export const videoFiles = {\n" + "  backdrop: backdropVideoFile,\n" + "}\n"
+        # )
 
         # Get the markers (sections)
         file.write("export const segmentDurations = {\n")
@@ -181,7 +234,8 @@ def save_typescript_files(
         file.write(
             "export const placeInfo = {\n"
             + "  modelFile,\n"
-            + "  videoFiles,\n"
+            # + "  videoFiles,\n"
+            + "  backdropsByCamera,\n"
             + "  cameraNames,\n"
             + "  segmentDurations,\n"
             + "  segmentNames,\n"
