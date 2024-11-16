@@ -16,7 +16,7 @@ from ...utils.folders import rename_object_to_snake_case
 from ...utils.getters.get_things import get_collections
 
 
-def update_camera_clip_from_point(camera, point):
+def update_camera_clip_from_point(camera, object):
     """
     Update the camera's clip start and end based on the distance to the point.
     """
