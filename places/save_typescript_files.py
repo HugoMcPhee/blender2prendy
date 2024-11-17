@@ -36,7 +36,7 @@ def save_typescript_files(
         for cam_name in camera_names:
             # import converted .env files (instead of hdr)
             file.write(
-                f'import {cam_name}_probe_image from "./{cam_name}_probe.env";\n'
+                f'import {cam_name}_probe_image from "./probes/{cam_name}.env";\n'
             )
         file.write("\n")
 

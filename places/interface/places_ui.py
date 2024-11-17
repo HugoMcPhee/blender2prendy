@@ -6,7 +6,7 @@ from bpy.types import Operator, Panel, PropertyGroup
 from bpy.utils import register_class, unregister_class
 
 from ...places.utils.checkers import is_non_pano_camera
-from ...places.clean_and_render_place import clean_and_render_place
+from ..clean_and_render_place.clean_and_render_place import clean_and_render_place
 
 from ..place_info import place_info
 from ..places import setup_place

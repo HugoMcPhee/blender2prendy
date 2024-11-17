@@ -7,44 +7,44 @@ from ..utils.getters.get_things import get_collections, get_scene, get_view_laye
 
 
 def custom_render_video(
-    camName,
-    segmentName,
+    cam_name,
+    segment_name,
     renders_folder_path,
     segments_info,
     chosen_framerate,
-    isDepth=False,
+    is_depth=False,
 ):
     scene = get_scene()
 
     # segments_info, chosen_framerate paramerter
     # get_renders_folder_path()
 
-    # set backdrop_type to "color" or "depth" based on isDepth
+    # set backdrop_type to "color" or "depth" based on is_depth
     backdrop_type = "color"
-    if isDepth:
+    if is_depth:
         backdrop_type = "depth"
 
-    nested_dir_path = os.path.join(renders_folder_path, camName, segmentName)
+    nested_dir_path = os.path.join(renders_folder_path, cam_name, segment_name)
     os.makedirs(nested_dir_path, exist_ok=True)
     # make a directory for color and depth (for the frames)
     frames_dir = os.path.join(nested_dir_path, backdrop_type)
     os.makedirs(frames_dir, exist_ok=True)
 
     frame_image_folder_path = (
-        # f"{renders_folder_path}{os.sep}{camName}_{segmentName}{fileNamePost}"
+        # f"{renders_folder_path}{os.sep}{cam_name}_{segment_name}{fileNamePost}"
         f"{frames_dir}{os.sep}"
     )
 
-    segment_info = segments_info[segmentName]
+    segment_info = segments_info[segment_name]
     amount_of_frames_full = scene.frame_end - scene.frame_start
     amount_of_frames_for_segment = segment_info.frameEnd - segment_info.frameStart
     amount_of_frames_saved = int(round(amount_of_frames_for_segment / scene.frame_step))
-    nested_dir_path = os.path.join(renders_folder_path, camName, segmentName)
+    nested_dir_path = os.path.join(renders_folder_path, cam_name, segment_name)
 
     # video_output_path = (
-    #     f"{renders_folder_path}{os.sep}{camName}_{segmentName}{fileNamePost}"
+    #     f"{renders_folder_path}{os.sep}{cam_name}_{segment_name}{fileNamePost}"
     # )
-    # video_output_path = f"{renders_folder_path}{os.sep}{camName}_{segmentName}"
+    # video_output_path = f"{renders_folder_path}{os.sep}{cam_name}_{segment_name}"
     # video_quality = "23"
     # keyframes = "1"
 

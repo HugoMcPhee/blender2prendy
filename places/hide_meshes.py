@@ -21,13 +21,13 @@ def reenable_hidden_meshes():
     place_info.meshnames_that_were_disabled_in_render = []
 
 
-def hide_meshes_for_camera(cam_name, isDepth=False):
+def hide_meshes_for_camera(cam_name, is_depth=False):
     # hide meshes to camera that should be hidden
     if cam_name in place_info.hidden_meshes_by_cam:
         for mesh_name in place_info.hidden_meshes_by_cam[cam_name]:
             print(mesh_name)
             mesh_object = bpy.data.objects[mesh_name]
-            if isDepth:
+            if is_depth:
                 mesh_object.hide_render = True
             else:
                 mesh_object.visible_camera = False

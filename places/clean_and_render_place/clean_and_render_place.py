@@ -1,119 +1,58 @@
 import os
 import shutil
 import subprocess
+import time
 import bpy
 
-from ..utils.folders import get_plugin_folder
+from ...places.clean_and_render_place.combine_frames_to_images import (
+    combine_frames_to_images,
+)
 
-from ..utils.getters.get_things import get_collections, get_scene, get_view_layer
-from ..places.cam_background import setup_cam_background
-from ..utils.collections import (
+from ...places.utils.getters.existing_files import (
+    get_backdrop_texture_exists,
+    get_probe_texture_exists,
+)
+
+from ...places.clean_and_render_place.make_place_gltf import make_place_gltf
+
+from ...utils.folders import get_plugin_folder
+
+from ...utils.getters.get_things import get_collections, get_scene, get_view_layer
+from ..cam_background import setup_cam_background
+from ...utils.collections import (
     include_only_one_collection,
     include_only_two_collections,
 )
-from ..places.combine_videos import combine_videos
-from ..places.convert_exportable_curves import (
+from ..combine_videos import combine_videos
+from ..convert_exportable_curves import (
     convert_floor_curves,
     delete_meshes,
     revert_curve_names,
 )
-from ..places.custom_render_video import custom_render_video
-from ..places.place_info import place_info
-from ..places.places import (
+from ..custom_render_video import custom_render_video
+from ...places.place_info import place_info
+from ...places.places import (
     setup_video_rendering,
     update_items_and_variables,
 )
-from ..places.hide_meshes import (
+from ..hide_meshes import (
     hide_meshes_for_camera,
     reenable_all_meshes,
     reenable_hidden_meshes,
 )
-from ..places.depth_visible_objects import (
+from ..depth_visible_objects import (
     set_faster_depth_materials,
     toggle_depth_hidden_objects,
     toggle_depth_visible_objects,
     toggle_world_volume,
     unset_faster_depth_materials,
 )
-from ..places.probes import (
+from ..probes import (
     setup_camera_probes,
     setup_probe_rendering,
     toggle_probe_visible_objects,
 )
-from ..places.save_typescript_files import save_typescript_files
-
-
-def get_render_frames_folder_path(camName, segmentName, is_depth_video=False):
-    backdrop_type = "color"
-    if is_depth_video:
-        backdrop_type = "depth"
-    return os.path.join(
-        place_info.renders_folder_path, camName, segmentName, backdrop_type
-    )
-
-
-def get_render_exists(camName, segmentName, is_depth_video=False):
-    path = get_render_frames_folder_path(camName, segmentName, is_depth_video)
-    return os.path.isdir(path)
-
-
-def combine_frames_to_images(camName, segmentName, is_depth_video=False):
-    # Run the node script to combine the frames into images
-    plugin_path = get_plugin_folder()
-    rendered_frames_path = get_render_frames_folder_path(
-        camName, segmentName, is_depth_video
-    )
-
-    backdrop_type = "color"
-    if is_depth_video:
-        backdrop_type = "depth"
-
-    node_script_path = os.path.join(
-        plugin_path, "nodeScripts", "combineFrames", "combineFrames.js"
-    )
-    subprocess.run(
-        ["node", node_script_path],
-        cwd=rendered_frames_path,
-    )
-    ktx2_arguments_string = "--bcmp"
-    if is_depth_video:
-        ktx2_arguments_string = "--bcmp --target_type R --qlevel 5"
-
-    # find all files in rendered_frames_path that have the extension .png
-    for file in os.listdir(rendered_frames_path):
-        if file.endswith(".png"):
-            # check if the file starts with "texture"
-            if not file.startswith("texture"):
-                continue
-            ktx2_file_name = file.replace(".png", ".ktx2")
-            make_ktx2_texture_command = (
-                f"toktx --2d {ktx2_arguments_string} {ktx2_file_name} {file}"
-            )
-            # convert the png to ktx2
-            print(f"running {make_ktx2_texture_command}")
-            subprocess.run(
-                make_ktx2_texture_command,
-                shell=True,
-                cwd=rendered_frames_path,
-            )
-
-            # move the new ktx2 file to the place folder , in the backdrops directory, and also rename the texture from texture1 to use the camName, segmentName, and backdrop_type with the number that used to be in the texture name
-
-            # if  place_info.parent_folder_path/backdrops doesn't exist, create it
-            if not os.path.exists(
-                os.path.join(place_info.parent_folder_path, "backdrops")
-            ):
-                os.makedirs(os.path.join(place_info.parent_folder_path, "backdrops"))
-
-            new_ktx2_file_path = os.path.join(
-                place_info.parent_folder_path,
-                "backdrops",
-                f"{camName}_{segmentName}_{backdrop_type}_{file.replace('texture', '').replace('.png', '')}.ktx2",
-            )
-            shutil.move(
-                os.path.join(rendered_frames_path, ktx2_file_name),
-                new_ktx2_file_path,
-            )
+from ..save_typescript_files import save_typescript_files
 
 
 # -------------------------------------------------
@@ -134,42 +73,7 @@ def clean_and_render_place(
 
     update_items_and_variables()
 
-    # Change active collection To Exportable
-
-    collection_to_include = collections["Exportable"]
-    include_only_one_collection(view_layer, collection_to_include)
-
-    #
-    # temporary_wall_meshes_to_export = convert_wall_curves()
-    temporary_floor_meshes_to_export = convert_floor_curves()
-
-    #  deselect currently selected
-    for obj in bpy.context.selected_objects:
-        obj.select_set(False)
-
-    # select only the exportable stuff
-    for obj in collections["Exportable"].all_objects:
-        obj.select_set(True)
-
-    # deselect all panoramic probe cameras
-    for obj in collections["cameras"].all_objects:
-        # print(obj.name)
-        if obj.type == "CAMERA" and obj.data.type == "PANO":
-            obj.select_set(False)
-
-    # Export gltf glb file
-    bpy.ops.export_scene.gltf(
-        export_format="GLB",
-        export_cameras=True,
-        export_apply=True,
-        export_animations=True,
-        filepath=place_info.parent_folder_path
-        + os.sep
-        + place_info.this_place_name
-        + ".glb",
-        use_selection=True,
-        export_hierarchy_full_collections=True,
-    )
+    temporary_floor_meshes_to_export = make_place_gltf()
 
     # If we want to export the details gltf
     if should_make_details_gltf:
@@ -206,6 +110,7 @@ def clean_and_render_place(
     # Change active collection To Details
     collection_to_include = collections["Details"]
     include_only_one_collection(view_layer, collection_to_include)
+    time.sleep(0.1)  # wait for the collection to change
 
     #  Add probes if they're missing
     setup_camera_probes()
@@ -220,9 +125,8 @@ def clean_and_render_place(
                 else:
                     camera_object = looped_object
 
-        render_output_path_start = (
-            f"{place_info.renders_folder_path}{os.sep}{cam_collection.name}"
-        )
+        cam_name = camera_object.name
+        render_output_path_start = f"{place_info.renders_folder_path}{os.sep}{cam_name}"
         probe_output_path = f"{render_output_path_start}_probe.hdr"
 
         segment_names_for_cam = place_info.segments_for_cams[camera_object.name]
@@ -231,7 +135,8 @@ def clean_and_render_place(
             print(f"Set camera {looped_object.name}")
             reenable_all_meshes()
             # render probe
-            if not os.path.isfile(probe_output_path) or should_overwrite_render:
+            if not get_probe_texture_exists(cam_name) or should_overwrite_render:
+                print(f"rendering probe {cam_name}")
                 scene.camera = probe_object
                 original_resolution_x = scene.render.resolution_x
                 original_resolution_y = scene.render.resolution_y
@@ -242,6 +147,11 @@ def clean_and_render_place(
                 toggle_depth_visible_objects(False)
                 toggle_probe_visible_objects(True)
                 scene.view_settings.view_transform = "Raw"
+                scene.view_settings.use_hdr_view = True
+                # scene.view_settings.view_transform = "Khronos PBR Neutral"
+                scene.sequencer_colorspace_settings.name = "Khronos PBR Neutral sRGB"
+
+                scene.cycles.use_denoising = True
 
                 # set the frame for the best lighting
                 scene.frame_set(the_best_lighting_frame)
@@ -261,13 +171,15 @@ def clean_and_render_place(
                 originalClipStart = scene.camera.data.clip_start
                 originalClipEnd = scene.camera.data.clip_end
 
+                color_textures_exist = get_backdrop_texture_exists(
+                    camera_object.name, segment_name, is_depth_video=False
+                )
+                depth_textures_exist = get_backdrop_texture_exists(
+                    camera_object.name, segment_name, is_depth_video=True
+                )
+
                 # render color videos
-                if (
-                    not get_render_exists(
-                        camera_object.name, segment_name, is_depth_video=False
-                    )
-                    or should_overwrite_render
-                ):
+                if not color_textures_exist or should_overwrite_render:
                     scene.camera = camera_object
 
                     originalClipStart = scene.camera.data.clip_start
@@ -287,6 +199,8 @@ def clean_and_render_place(
                     scene.sequencer_colorspace_settings.name = (
                         "Khronos PBR Neutral sRGB"
                     )
+                    scene.view_settings.use_hdr_view = False
+                    scene.cycles.use_denoising = True
 
                     reenable_hidden_meshes()
                     hide_meshes_for_camera(camera_object.name, False)
@@ -294,8 +208,8 @@ def clean_and_render_place(
                     setup_cam_background()
                     # render without the depth name
                     custom_render_video(
-                        camName=camera_object.name,
-                        segmentName=segment_name,
+                        cam_name=camera_object.name,
+                        segment_name=segment_name,
                         chosen_framerate=place_info.chosen_framerate,
                         renders_folder_path=place_info.renders_folder_path,
                         segments_info=place_info.segments_info,
@@ -306,24 +220,12 @@ def clean_and_render_place(
                     scene.camera.data.clip_start = originalClipStart
                     scene.camera.data.clip_end = originalClipEnd
 
-                combine_frames_to_images(
-                    camera_object.name, segment_name, is_depth_video=False
-                )
+                    combine_frames_to_images(
+                        camera_object.name, segment_name, is_depth_video=False
+                    )
 
                 # render depth video
-                if (
-                    not get_render_exists(
-                        camera_object.name, segment_name, is_depth_video=True
-                    )
-                    or should_overwrite_render
-                ):
-                    # originalClipStart = 0.1
-                    # originalClipEnd = 50
-                    # originalClipStart = scene.camera.data.clip_start
-                    # originalClipEnd = scene.camera.data.clip_end
-
-                    # scene.camera.data.clip_start = 0.1
-                    # scene.camera.data.clip_end = 50
+                if not depth_textures_exist or should_overwrite_render:
 
                     setup_video_rendering()
                     scene.camera = camera_object
@@ -336,6 +238,8 @@ def clean_and_render_place(
                     toggle_probe_visible_objects(False)
                     scene.view_settings.view_transform = "Raw"
                     scene.sequencer_colorspace_settings.name = "sRGB"
+                    scene.view_settings.use_hdr_view = False
+                    scene.cycles.use_denoising = False
 
                     reenable_hidden_meshes()
                     hide_meshes_for_camera(camera_object.name, True)
@@ -344,12 +248,12 @@ def clean_and_render_place(
 
                     # customRenderVideo(video_output_path_with_depth)
                     custom_render_video(
-                        camName=camera_object.name,
-                        segmentName=segment_name,
+                        cam_name=camera_object.name,
+                        segment_name=segment_name,
                         chosen_framerate=place_info.chosen_framerate,
                         renders_folder_path=place_info.renders_folder_path,
                         segments_info=place_info.segments_info,
-                        isDepth=True,
+                        is_depth=True,
                     )
 
                     unset_faster_depth_materials()
@@ -358,14 +262,15 @@ def clean_and_render_place(
                     scene.sequencer_colorspace_settings.name = (
                         "Khronos PBR Neutral sRGB"
                     )
+                    scene.view_settings.use_hdr_view = False
 
                     reenable_hidden_meshes()
 
                     # scene.camera.data.clip_start = originalClipStart
                     # scene.camera.data.clip_end = originalClipEnd
-                combine_frames_to_images(
-                    camera_object.name, segment_name, is_depth_video=True
-                )
+                    combine_frames_to_images(
+                        camera_object.name, segment_name, is_depth_video=True
+                    )
 
             # setup_probe_rendering
             reenable_all_meshes()
@@ -408,11 +313,18 @@ def clean_and_render_place(
             shell=True,
         )
         # move all .env files from the renders folder to the parent folder
+
+        # if  place_info.parent_folder_path/backdrops doesn't exist, create it
+        probe_textures_path = os.path.join(place_info.parent_folder_path, "probes")
+        if not os.path.exists(probe_textures_path):
+            os.makedirs(probe_textures_path)
+
         for file in os.listdir(place_info.renders_folder_path):
-            if file.endswith(".env"):
+            if file.endswith("_probe.env"):
+                new_file_name = file.replace("_probe.env", ".env")
                 shutil.move(
                     os.path.join(place_info.renders_folder_path, file),
-                    os.path.join(place_info.parent_folder_path, file),
+                    os.path.join(probe_textures_path, new_file_name),
                 )
 
     print("delete frames")

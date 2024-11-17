@@ -27,10 +27,10 @@ class CamSegmentInfo:
     can_render: bool
 
 
-CamSegmentInfoBySegment = Dict[str, CamSegmentInfo]  # { camName: SegmentInfoForCam }
+CamSegmentInfoBySegment = Dict[str, CamSegmentInfo]  # { cam_name: SegmentInfoForCam }
 CamSegmentInfoBySegmentByCam = Dict[
     str, CamSegmentInfoBySegment
-]  # { segmentName: SegmentsForCam }
+]  # { segment_name: SegmentsForCam }
 
 
 @dataclass
@@ -66,13 +66,13 @@ class PlaceInfo:
     segments_order: StringList = make_empty_field(list)
     segments_for_cams: StringListMap = make_empty_field(
         dict
-    )  # { camName: segmentNames[]
+    )  # { cam_name: segment_names[]
     segment_info_by_cam: CamSegmentInfoBySegmentByCam = make_empty_field(
         dict
-    )  # { camName: segmentNames[]
-    # for quickly keeping track of data for each mesh  { meshName: camNames[] }
+    )  # { cam_name: segment_names[]
+    # for quickly keeping track of data for each mesh  { meshName: cam_names[] }
     hidden_to_cams_by_mesh: StringListMap = make_empty_field(dict)
-    # for quickly accessing the hidden meshes for each camera { camName: meshNames[] }
+    # for quickly accessing the hidden meshes for each camera { cam_name: meshNames[] }
     hidden_meshes_by_cam: StringListMap = make_empty_field(dict)
     meshnames_that_were_disabled_in_render: StringList = make_empty_field(list)
     # bpy.data.worlds["World"].node_tree.nodes["Volume Scatter"].inputs[0].default_value

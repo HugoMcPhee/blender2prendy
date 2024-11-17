@@ -18,21 +18,10 @@ from .update_items_and_variables import update_items_and_variables
 
 def setup_video_rendering():
     update_items_and_variables()
-
     scene = get_scene()
-
     scene.render.resolution_x = place_info.original_resolution_x
     scene.render.resolution_y = place_info.original_resolution_y
-
     scene.render.image_settings.file_format = "PNG"
-    # NOTE videos aren't rendered directly anymore, images are then converted to videos with ffmpeg
-    scene.render.ffmpeg.format = "MPEG4"
-    scene.render.ffmpeg.codec = "H264"
-    scene.render.ffmpeg.audio_codec = "NONE"
-    scene.render.ffmpeg.constant_rate_factor = "PERC_LOSSLESS"
-    scene.render.ffmpeg.gopsize = 4
-    # scene.node_tree.nodes["Denoise"].use_hdr = True
-
     # for faster performance
     scene.render.use_persistent_data = True
 

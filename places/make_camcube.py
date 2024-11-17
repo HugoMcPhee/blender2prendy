@@ -73,7 +73,7 @@ def make_camcube(camera):
     # )
     # deselect eveything
     bpy.ops.object.select_all(action="DESELECT")
-    #  do the boolean intersection with both and name the new one camcube_auto_camName
+    #  do the boolean intersection with both and name the new one camcube_auto_cam_name
     # select the cam_frustum then the cam_cube (and mae the cam_cube active)
     cam_frustum_mesh.select_set(True)
     temp_flat_cube.select_set(True)
