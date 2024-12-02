@@ -51,7 +51,7 @@ class HiddenToCamToggle_Panel(bpy.types.Panel):
 
         if object.type == "MESH" or object.instance_type == "COLLECTION":
             mesh_object = object
-            column.prop(mesh_object, "toggle_all_hidden_to_cams", text="SELECT ALL")
+            column.prop(mesh_object, "toggle_all_hidden_to_cams", text="Toggle All")
             column = layout.column(align=True)
             for index, name in enumerate(place_info.camera_names):
                 column.prop(

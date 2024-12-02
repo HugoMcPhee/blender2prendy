@@ -256,15 +256,7 @@ class RenderTools_Panel(Panel):
 # Toggle Segments for Cams --------------------------
 
 
-def toggle_all_segments(self, context):
-    for index, flag in enumerate(self.segment_toggles):
-        self.segment_toggles[index] = self.toggle_all_segments
-    return None
-
-
 class SegmentToggle_Panel(bpy.types.Panel):
-    """Creates a Panel in the Object properties window"""
-
     bl_label = "Toggle Segments Panel"
     bl_idname = "OBJECT_PT_toggle_segments"
     bl_space_type = "PROPERTIES"
@@ -273,30 +265,37 @@ class SegmentToggle_Panel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        # should show if
         return is_non_pano_camera(context.object)
 
     def draw(self, context):
         layout = self.layout
-        column = layout.column()
-        cam_object = None
+        cam_object = context.object
+        cam_data = cam_object.data
 
-        if is_non_pano_camera(context.object):
-            cam_object = context.object
-            cam_name = cam_object.name
+        for item in cam_data.cam_segment_infos:
+            box = layout.box()
+            row = box.row(align=True)
+            # Display the segment name as a label (read-only)
+            row.label(text=item.segment_name)
+            # Display the framerate dropdown and can_render checkbox
+            row.prop(item, "framerate", text="FPS")
+            row.prop(item, "can_render", text="Render")
 
-            column.prop(cam_object.data, "toggle_all_segments", text="SELECT ALL")
-            column = layout.column(align=True)
-            for index, segment_name in enumerate(place_info.segments_order):
+        # Remove or adjust this line if 'toggle_all_segments' is not defined
+        layout.prop(cam_data, "toggle_all_segments", text="Toggle All")
 
-                column.prop(
-                    cam_object.data,
-                    "segment_toggles",
-                    index=index,
-                    text=segment_name,
-                    toggle=True,
-                )
-                # TODO Collection of cam segment infos, each one as a row
+    bl_label = "Toggle Segments Panel"
+    bl_idname = "OBJECT_PT_toggle_segments"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "data"
+
+
+def toggle_all_segments(self, context):
+    # Loop through cam_data.cam_segment_infos
+    for item in self.cam_segment_infos:
+        item.can_render = self.toggle_all_segments
+    return None
 
 
 classes = (

@@ -1,5 +1,9 @@
 import bpy
-from bpy.props import BoolVectorProperty, CollectionProperty, PointerProperty
+from bpy.props import (
+    BoolVectorProperty,
+    CollectionProperty,
+    PointerProperty,
+)
 
 from ...places.custom_props import CamSegmentProps
 
@@ -125,6 +129,25 @@ def setup_and_get_cameras_info():
                 update_camera_clip_from_point(found_main_camera, object)
 
 
+def update_cam_segment_infos(cam_data, segment_names):
+    # Clear existing items
+    # cam_data.cam_segment_infos.clear()
+    # Populate with new segment names
+    for index, name in enumerate(segment_names):
+        # Check if the segment already exists
+        if not any(item.segment_name == name for item in cam_data.cam_segment_infos):
+            item = cam_data.cam_segment_infos.add()
+            item.segment_name = name
+            # Set default values if needed
+            item.framerate = "12"
+            item.can_render = index == 0
+
+    # Loop all items in cam_data.cam_segment_infos and remove any that are not in segment_names
+    for item in cam_data.cam_segment_infos:
+        if item.segment_name not in segment_names:
+            cam_data.cam_segment_infos.remove(item)
+
+
 # Add segment toggles prop to cameras
 def setup_cameras_segments_info():
     collections = get_collections()
@@ -138,13 +161,34 @@ def setup_cameras_segments_info():
     bpy.types.Camera.cam_segment_infos = CollectionProperty(type=CamSegmentProps)
 
     def setup_cam_object(cam_object):
+        update_cam_segment_infos(cam_object.data, place_info.segments_order)
         segment_names_for_cam = []
+        new_place_info_cam_segment_info = {}
+
         for segment_index, segment_name in enumerate(place_info.segments_order):
-            should_render_segment = cam_object.data.segment_toggles[segment_index]
+            # should_render_segment = cam_object.data.segment_toggles[segment_index]
+            # find the segment in the cam_data.cam_segment_infos, and check if it can render
+            segment_info = next(
+                (
+                    item
+                    for item in cam_object.data.cam_segment_infos
+                    if item.segment_name == segment_name
+                ),
+                None,
+            )
+            should_render_segment = segment_info.can_render
             if should_render_segment:
                 segment_names_for_cam.append(segment_name)
+            # Update place_info.segment_info_by_cam with the segment info
+            new_place_info_cam_segment_info[segment_name] = {
+                "framerate": int(segment_info.framerate),
+                "can_render": should_render_segment,
+            }
 
         place_info.segments_for_cams[cam_object.name] = segment_names_for_cam
+        place_info.segment_info_by_cam[cam_object.name] = (
+            new_place_info_cam_segment_info
+        )
 
     for cam_folder_collection in collections["cameras"].children:
         for object in cam_folder_collection.objects:

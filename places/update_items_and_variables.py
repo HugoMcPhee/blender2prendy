@@ -62,3 +62,6 @@ def update_items_and_variables():
 
     register_mesh_properties(None, None)
     setup_mesh_objects()
+
+    # Show all place_info in console as stringified object
+    print(place_info)
