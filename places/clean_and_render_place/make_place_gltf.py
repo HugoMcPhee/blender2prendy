@@ -79,7 +79,7 @@ def make_place_gltf():
         export_cameras=True,
         export_apply=True,
         export_animations=True,
-        filepath=place_info.parent_folder_path
+        filepath=place_info.place_folder_path
         + os.sep
         + place_info.this_place_name
         + ".glb",

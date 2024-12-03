@@ -21,8 +21,8 @@ def export_model():
     path = os.path.normpath(bpy.data.filepath)
     parts = path.split(os.sep)
 
-    parent_folder_path = os.sep.join(parts[:-1])
-    grandparent_folder_path = os.sep.join(parts[:-2])
+    model_folder_path = os.sep.join(parts[:-1])
+    models_folder_path = os.sep.join(parts[:-2])
 
     full_filename = parts[-1]
     full_filename_parts = full_filename.split(".")
@@ -32,12 +32,12 @@ def export_model():
     # Get model names from folder names (folders with index files)
     model_names = []
 
-    with os.scandir(grandparent_folder_path) as directory_iterator:
+    with os.scandir(models_folder_path) as directory_iterator:
         for directory in directory_iterator:
             if directory.is_dir():
                 looped_model_has_main_file = False
                 with os.scandir(
-                    f"{grandparent_folder_path}{os.sep}{directory.name}"
+                    f"{models_folder_path}{os.sep}{directory.name}"
                 ) as model_folder:
                     looped_model_name = directory.name
                     for model_file in model_folder:
@@ -95,11 +95,11 @@ def export_model():
         export_animations=True,
         export_lights=False,
         use_selection=True,
-        filepath=parent_folder_path + os.sep + this_model_name + ".glb",
+        filepath=model_folder_path + os.sep + this_model_name + ".glb",
     )
 
     # Save index file
-    with open(parent_folder_path + os.sep + this_model_name + ".ts", "w") as file:
+    with open(model_folder_path + os.sep + this_model_name + ".ts", "w") as file:
         file.write(f'import modelFile from "./{this_model_name}.glb";\n\n')
 
         # animation_names
@@ -155,10 +155,10 @@ def export_model():
             + "};\n"
         )
 
-        # grandparent_folder_path
+        # models_folder_path
 
     # Save all models index file (models.ts)
-    with open(grandparent_folder_path + os.sep + "models.ts", "w") as file:
+    with open(models_folder_path + os.sep + "models.ts", "w") as file:
         for looped_name in model_names:
             file.write(
                 f'import {{ modelInfo as {looped_name}Info }} from "./{looped_name}/{looped_name}";\n'

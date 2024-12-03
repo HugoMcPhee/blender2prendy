@@ -1,36 +1,33 @@
+from math import floor
 import os
 from ..places.place_info import place_info
 
 
-def save_typescript_files(
-    parent_folder_path,
-    this_place_name,
-    camera_names,
-    segments_for_cams,
-    segments_info,
-    one_frame_time,
-    trigger_names,
-    segments_order,
-    wall_names,
-    grandparent_folder_path,
-    place_names,
-    floor_names,
-    spot_names,
-    soundspot_names,
-):
+def save_typescript_files():
+    place_folder_path = place_info.place_folder_path
+    this_place_name = place_info.this_place_name
+    camera_names = place_info.camera_names
+    segments_for_cams = place_info.segments_for_cams
+    segments_info = place_info.segments_info
+    trigger_names = place_info.trigger_names
+    segments_order = place_info.segments_order
+    wall_names = place_info.wall_names
+    places_folder_path = place_info.places_folder_path
+    assets_folder_path = place_info.assets_folder_path
+    place_names = place_info.place_names
+    floor_names = place_info.floor_names
+    spot_names = place_info.spot_names
+    soundspot_names = place_info.soundspot_names
     # Save the typescript files
 
     BACKDROP_TYPES = ["color", "depth"]
-    TEXTURES_AMOUNT = (
-        2  # TODO make this recorded or calculate it based on framerate and duration
-    )
+
+    # key is {cam_name}_{segment_name} and value is the amount of textures
+    texture_amounts_by_cam_and_segment = {}
 
     # Save index file
-    with open(parent_folder_path + os.sep + this_place_name + ".ts", "w") as file:
+    with open(place_folder_path + os.sep + this_place_name + ".ts", "w") as file:
         file.write(f'import modelFile from "./{this_place_name}.glb";\n\n')
-
-        # Import videos
-        # file.write(f'import backdropVideoFile from "./backdrops.mp4";\n')
 
         # Import probes
         for cam_name in camera_names:
@@ -41,17 +38,30 @@ def save_typescript_files(
         file.write("\n")
 
         # Import backdrop textures
+
         for cam_name in camera_names:
             # Example: (NOTE: 'start' is the segment name here)
-            # import first_cam_start_color_image from "./first_cam_start_color.ktx2";
-            # import first_cam_start_depth_image from "./first_cam_start_depth.ktx2";
+            # import first_cam_start_color_1 from "./first_cam_start_color.ktx2";
+            # import first_cam_start_depth_1 from "./first_cam_start_depth.ktx2";
+
             for segment_name in segments_for_cams[cam_name]:
 
                 # The format is like this: first_cam_start_color_1
-
                 file_name_start = f"{cam_name}_{segment_name}"
 
-                for texture_index in range(TEXTURES_AMOUNT):
+                # Loop through the files in backdrops folder that have the file_name_start, and count how many there are
+                textures_amount = 0
+                backdrops_directory = os.path.join(place_folder_path, "backdrops")
+                for file_name in os.listdir(backdrops_directory):
+                    if file_name.startswith(file_name_start + "_color_"):
+                        textures_amount += 1
+                # Save the amount of textures for each cam and segment
+                texture_amounts_by_cam_and_segment[f"{cam_name}_{segment_name}"] = (
+                    textures_amount
+                )
+                print(f"{file_name_start} has {textures_amount} textures")
+
+                for texture_index in range(textures_amount):
                     texture_count = texture_index + 1
                     for backdrop_type in BACKDROP_TYPES:
                         file.write(
@@ -93,12 +103,24 @@ def save_typescript_files(
             file.write(f'  "{cam_name}": {{\n')
             for segment_name in segments_for_cams[cam_name]:
                 segment_info = segments_info[segment_name]
+                cam_segment_info = place_info.segment_info_by_cam[cam_name][
+                    segment_name
+                ]
+                cam_segment_framerate = cam_segment_info.framerate
+                frame_step = int(
+                    round(place_info.scene_framerate / cam_segment_framerate)
+                )
+                total_frames = floor(segment_info.total_scene_frames / frame_step)
+
                 file.write(f'    "{segment_name}": {{\n')
-                file.write(f"      frameRate: {place_info.chosen_framerate},\n")
-                file.write(f"      totalFrames: {segment_info.total_frames},\n")
+                file.write(f"      frameRate: {cam_segment_framerate},\n")
+                file.write(f"      totalFrames: {total_frames},\n")
                 file.write(f"      maxFramesPerRow: {MAX_FRAMES_PER_ROW},\n")
                 file.write(f"      textures: [\n")
-                for index in range(TEXTURES_AMOUNT):
+                texture_amount = texture_amounts_by_cam_and_segment[
+                    f"{cam_name}_{segment_name}"
+                ]
+                for index in range(texture_amount):
                     texture_count = index + 1
                     file.write("        {\n")
                     for backdrop_type in BACKDROP_TYPES:
@@ -141,13 +163,6 @@ def save_typescript_files(
         #         },
         #     },
         #     };
-
-        # segmentNamesByCamera
-        # first_segment_name = segments_for_cams[cam_name]
-        # first_segment_info = segments_info[first_segment_name]
-        # first_segment_time = first_segment_info.time
-        # total_time_counted = first_segment_info.time # start counting total time from 0?
-        total_time_counted = 0  # start counting total time from 0, since the video starts at 0 (even if it starts at a differnt frame)
 
         cam_counter = 0
         file.write("export const segmentNamesByCamera = {\n")
@@ -245,10 +260,10 @@ def save_typescript_files(
             + "} as const;\n"
         )
 
-        # grandparent_folder_path
+        # places_folder_path
 
     # Save all places index file
-    with open(grandparent_folder_path + os.sep + "places.ts", "w") as file:
+    with open(places_folder_path + os.sep + "places.ts", "w") as file:
         for cam_name in place_names:
             file.write(
                 f'import {{ placeInfo as {cam_name}Info }} from "./{cam_name}/{cam_name}";\n'

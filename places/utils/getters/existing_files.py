@@ -25,7 +25,7 @@ def get_render_exists(cam_name, segment_name, is_depth_video=False):
 
 
 def get_backdrop_texture_exists(cam_name, segment_name, is_depth_video=False):
-    backdrop_texures_path = os.path.join(place_info.parent_folder_path, "backdrops")
+    backdrop_texures_path = os.path.join(place_info.place_folder_path, "backdrops")
     backdrop_type = "color"
     if is_depth_video:
         backdrop_type = "depth"
@@ -35,6 +35,6 @@ def get_backdrop_texture_exists(cam_name, segment_name, is_depth_video=False):
 
 
 def get_probe_texture_exists(cam_name):
-    probe_texures_path = os.path.join(place_info.parent_folder_path, "probes")
+    probe_texures_path = os.path.join(place_info.place_folder_path, "probes")
     texture_name = f"{cam_name}.env"
     return os.path.isfile(os.path.join(probe_texures_path, texture_name))

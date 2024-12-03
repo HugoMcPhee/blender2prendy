@@ -83,7 +83,7 @@ def combine_videos(
         "error",
     ]
 
-    # subprocess.run(f"cd {parent_folder_path}")
+    # subprocess.run(f"cd {place_folder_path}")
     subprocess.run(combineVideosCommand_color, cwd=renders_folder_path)
     subprocess.run(combineVideosCommand_depth, cwd=renders_folder_path)
     subprocess.run(combineColorAndDepthVertically, cwd=renders_folder_path)

@@ -58,7 +58,9 @@ def setup_place(the_render_quality, the_framerate):
 
     scene.render.fps = place_info.scene_framerate
 
+    # NOTE this gets set for each camera and segment later
     scene.frame_step = int(round(place_info.scene_framerate / the_framerate))
+
     scene.frame_start = int(place_info.first_frame)
     scene.frame_end = int(place_info.last_frame)
 

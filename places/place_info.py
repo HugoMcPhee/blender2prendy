@@ -18,7 +18,7 @@ class Segment:
     time: float  # the render start time for the segment
     frameStart: int
     frameEnd: int
-    total_frames: int
+    total_scene_frames: int
 
 
 @dataclass
@@ -27,10 +27,13 @@ class CamSegmentInfo:
     can_render: bool
 
 
-CamSegmentInfoBySegment = Dict[str, CamSegmentInfo]  # { cam_name: SegmentInfoForCam }
+# Maps a segment name to its CamSegmentInfo
+CamSegmentInfoBySegment = Dict[str, CamSegmentInfo]  # { segment_name: CamSegmentInfo }
+
+# Maps a camera name to its segments dictionary
 CamSegmentInfoBySegmentByCam = Dict[
     str, CamSegmentInfoBySegment
-]  # { segment_name: SegmentsForCam }
+]  # { cam_name: { segment_name: CamSegmentInfo } }
 
 
 @dataclass
@@ -41,9 +44,10 @@ class PlaceInfo:
     path: str = ""
     parts: StringList = make_empty_field(list)
 
-    parent_folder_path: str = ""
+    place_folder_path: str = ""
     renders_folder_path: str = ""
-    grandparent_folder_path: str = ""
+    places_folder_path: str = ""
+    assets_folder_path: str = ""
 
     full_filename: str = ""
     full_filename_parts: str = ""
@@ -69,7 +73,7 @@ class PlaceInfo:
     )  # { cam_name: segment_names[]
     segment_info_by_cam: CamSegmentInfoBySegmentByCam = make_empty_field(
         dict
-    )  # { cam_name: segment_names[]
+    )  # { cam_name: SegmentInfoForCam }
     # for quickly keeping track of data for each mesh  { meshName: cam_names[] }
     hidden_to_cams_by_mesh: StringListMap = make_empty_field(dict)
     # for quickly accessing the hidden meshes for each camera { cam_name: meshNames[] }
@@ -80,20 +84,10 @@ class PlaceInfo:
 
     # --------
     # Frames
-    total_frames: int = 1 - 1  # scene.frame_end - scene.frame_start
-    total_time: float = 1
-    # chosen_framerate = scene_framerate / scene.frame_step
-    chosen_framerate: float = 1
-    one_frame_time: float = 1
+    total_scene_frames: int = 1 - 1  # scene.frame_end - scene.frame_start
 
     first_frame: int = 9999
     last_frame: int = -9999
-
-    # Set initial values based on other values
-    def __post_init__(self):
-        self.total_time: float = self.total_frames / self.scene_framerate
-        self.chosen_framerate = self.scene_framerate / 1
-        self.one_frame_time = 1 / self.chosen_framerate
 
 
 place_info = PlaceInfo()

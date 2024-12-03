@@ -49,14 +49,28 @@ def combine_frames_to_images(cam_name, segment_name, is_depth_video=False):
 
             # move the new ktx2 file to the place folder , in the backdrops directory, and also rename the texture from texture1 to use the cam_name, segment_name, and backdrop_type with the number that used to be in the texture name
 
-            # if  place_info.parent_folder_path/backdrops doesn't exist, create it
+            # if  place_info.place_folder_path/backdrops doesn't exist, create it
             if not os.path.exists(
-                os.path.join(place_info.parent_folder_path, "backdrops")
+                os.path.join(place_info.place_folder_path, "backdrops")
             ):
-                os.makedirs(os.path.join(place_info.parent_folder_path, "backdrops"))
+                os.makedirs(os.path.join(place_info.place_folder_path, "backdrops"))
+
+            existing_backdrop_textures_name_prefix = (
+                f"{cam_name}_{segment_name}_{backdrop_type}_"
+            )
+            # delete any files in the backdrops folder that have the same prefix
+            for old_file in os.listdir(
+                os.path.join(place_info.place_folder_path, "backdrops")
+            ):
+                if old_file.startswith(existing_backdrop_textures_name_prefix):
+                    os.remove(
+                        os.path.join(
+                            place_info.place_folder_path, "backdrops", old_file
+                        )
+                    )
 
             new_ktx2_file_path = os.path.join(
-                place_info.parent_folder_path,
+                place_info.place_folder_path,
                 "backdrops",
                 f"{cam_name}_{segment_name}_{backdrop_type}_{file.replace('texture', '').replace('.png', '')}.ktx2",
             )

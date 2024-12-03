@@ -9,7 +9,7 @@ from ...places.custom_props import CamSegmentProps
 
 from ...utils.collections import add_collection_folder_to_cameras
 from ...places.make_camcube import make_camcube
-from ...places.place_info import place_info
+from ...places.place_info import CamSegmentInfo, place_info
 from ...places.utils.checkers import (
     is_cam_focus_point,
     is_non_pano_camera,
@@ -180,10 +180,10 @@ def setup_cameras_segments_info():
             if should_render_segment:
                 segment_names_for_cam.append(segment_name)
             # Update place_info.segment_info_by_cam with the segment info
-            new_place_info_cam_segment_info[segment_name] = {
-                "framerate": int(segment_info.framerate),
-                "can_render": should_render_segment,
-            }
+            new_place_info_cam_segment_info[segment_name] = CamSegmentInfo(
+                framerate=int(segment_info.framerate),
+                can_render=should_render_segment,
+            )
 
         place_info.segments_for_cams[cam_object.name] = segment_names_for_cam
         place_info.segment_info_by_cam[cam_object.name] = (

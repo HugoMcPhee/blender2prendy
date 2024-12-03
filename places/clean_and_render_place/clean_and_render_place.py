@@ -92,7 +92,7 @@ def clean_and_render_place(
             export_cameras=True,
             export_apply=True,
             export_animations=True,
-            filepath=place_info.parent_folder_path
+            filepath=place_info.place_folder_path
             + os.sep
             + place_info.this_place_name
             + "_details"
@@ -210,7 +210,6 @@ def clean_and_render_place(
                     custom_render_video(
                         cam_name=camera_object.name,
                         segment_name=segment_name,
-                        chosen_framerate=place_info.chosen_framerate,
                         renders_folder_path=place_info.renders_folder_path,
                         segments_info=place_info.segments_info,
                     )
@@ -250,7 +249,6 @@ def clean_and_render_place(
                     custom_render_video(
                         cam_name=camera_object.name,
                         segment_name=segment_name,
-                        chosen_framerate=place_info.chosen_framerate,
                         renders_folder_path=place_info.renders_folder_path,
                         segments_info=place_info.segments_info,
                         is_depth=True,
@@ -280,32 +278,17 @@ def clean_and_render_place(
     # combine all the camera names into a join_color_vids.txt and join_depth_vids.txt
     # combine_videos(
     #     renders_folder_path=place_info.renders_folder_path,
-    #     place_folder_path=place_info.parent_folder_path,
+    #     place_folder_path=place_info.place_folder_path,
     #     camera_names=place_info.camera_names,
     #     segments_for_cams=place_info.segments_for_cams,
     # )
 
     # Save the typescript files
-    save_typescript_files(
-        place_info.parent_folder_path,
-        place_info.this_place_name,
-        place_info.camera_names,
-        place_info.segments_for_cams,
-        place_info.segments_info,
-        place_info.one_frame_time,
-        place_info.trigger_names,
-        place_info.segments_order,
-        place_info.wall_names,
-        place_info.grandparent_folder_path,
-        place_info.place_names,
-        place_info.floor_names,
-        place_info.spot_names,
-        place_info.soundspot_names,
-    )
+    save_typescript_files()
     print("done :) ✨, converting probes ")
 
     # subprocess.run(
-    #     "npx github:HugoMcPhee/hdr-to-babylon-env 128", cwd=parent_folder_path
+    #     "npx github:HugoMcPhee/hdr-to-babylon-env 128", cwd=place_folder_path
     # )
     if should_convert_probes:
         subprocess.call(
@@ -314,8 +297,8 @@ def clean_and_render_place(
         )
         # move all .env files from the renders folder to the parent folder
 
-        # if  place_info.parent_folder_path/backdrops doesn't exist, create it
-        probe_textures_path = os.path.join(place_info.parent_folder_path, "probes")
+        # if  place_info.place_folder_path/backdrops doesn't exist, create it
+        probe_textures_path = os.path.join(place_info.place_folder_path, "probes")
         if not os.path.exists(probe_textures_path):
             os.makedirs(probe_textures_path)
 
