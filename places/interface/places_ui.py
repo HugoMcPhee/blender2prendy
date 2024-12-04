@@ -112,7 +112,6 @@ class RenderTools_Operator_SetupPlace(Operator):
         scene = context.scene
         render_tool_info = scene.render_tool_info
         setup_place(
-            render_tool_info.the_render_quality,
             int(render_tool_info.my_framerate_enum),
         )
         return {"FINISHED"}
@@ -329,3 +328,4 @@ def unregister_places():
     for the_class in reversed(all_classes):
         unregister_class(the_class)
     del bpy.types.Scene.render_tool_info
+    del bpy.types.Camera.toggle_all_segments

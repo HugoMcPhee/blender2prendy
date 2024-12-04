@@ -65,9 +65,6 @@ def set_faster_depth_materials():
     view_layer = bpy.context.view_layer
     view_layer.material_override = override_material
 
-    # Optimize rendering settings
-    # bpy.context.scene.cycles.samples = 1  # Minimal samples for speed
-
 
 def unset_faster_depth_materials():
     view_layer = bpy.context.view_layer

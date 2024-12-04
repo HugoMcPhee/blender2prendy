@@ -2,27 +2,28 @@ import os
 import shutil
 import subprocess
 import time
+
 import bpy
 
 from ...places.clean_and_render_place.combine_frames_to_images import (
     combine_frames_to_images,
 )
-
+from ...places.clean_and_render_place.make_place_gltf import make_place_gltf
+from ...places.clean_and_render_place.setup_color_render import setup_color_render
+from ...places.clean_and_render_place.setup_depth_render import setup_depth_render
+from ...places.place_info import place_info
+from ...places.places import setup_video_rendering, update_items_and_variables
 from ...places.utils.getters.existing_files import (
     get_backdrop_texture_exists,
     get_probe_texture_exists,
 )
-
-from ...places.clean_and_render_place.make_place_gltf import make_place_gltf
-
-from ...utils.folders import get_plugin_folder
-
-from ...utils.getters.get_things import get_collections, get_scene, get_view_layer
-from ..cam_background import setup_cam_background
 from ...utils.collections import (
     include_only_one_collection,
     include_only_two_collections,
 )
+from ...utils.folders import get_plugin_folder
+from ...utils.getters.get_things import get_collections, get_scene, get_view_layer
+from ..cam_background import setup_cam_background
 from ..combine_videos import combine_videos
 from ..convert_exportable_curves import (
     convert_floor_curves,
@@ -30,16 +31,6 @@ from ..convert_exportable_curves import (
     revert_curve_names,
 )
 from ..custom_render_video import custom_render_video
-from ...places.place_info import place_info
-from ...places.places import (
-    setup_video_rendering,
-    update_items_and_variables,
-)
-from ..hide_meshes import (
-    hide_meshes_for_camera,
-    reenable_all_meshes,
-    reenable_hidden_meshes,
-)
 from ..depth_visible_objects import (
     set_faster_depth_materials,
     toggle_depth_hidden_objects,
@@ -47,13 +38,17 @@ from ..depth_visible_objects import (
     toggle_world_volume,
     unset_faster_depth_materials,
 )
+from ..hide_meshes import (
+    hide_meshes_for_camera,
+    reenable_all_meshes,
+    reenable_hidden_meshes,
+)
 from ..probes import (
     setup_camera_probes,
     setup_probe_rendering,
     toggle_probe_visible_objects,
 )
 from ..save_typescript_files import save_typescript_files
-
 
 # -------------------------------------------------
 # Original clean and render place
@@ -70,6 +65,10 @@ def clean_and_render_place(
     scene = get_scene()
     collections = get_collections()
     view_layer = get_view_layer()
+
+    include_only_two_collections(
+        view_layer, collections["Exportable"], collections["Details"]
+    )
 
     update_items_and_variables()
 
@@ -141,8 +140,18 @@ def clean_and_render_place(
                 original_resolution_x = scene.render.resolution_x
                 original_resolution_y = scene.render.resolution_y
                 setup_probe_rendering()
+
+                # Change active collection To Details
+                collection_to_include = collections["Details"]
+                include_only_one_collection(view_layer, collection_to_include)
+                time.sleep(0.1)  # wait for the collection to change
+
                 # toggle the depth toggle off
                 scene.node_tree.nodes["switch_depth"].check = False
+                # Optimize rendering settings
+                scene.cycles.samples = place_info.render_quality
+                # NOTE trying motion_blur_shutter as 0 for probe, but it crashed with GPU Optix rendering in cycles x
+                scene.render.motion_blur_shutter = 0
                 toggle_depth_hidden_objects(True)
                 toggle_depth_visible_objects(False)
                 toggle_probe_visible_objects(True)
@@ -150,9 +159,7 @@ def clean_and_render_place(
                 scene.view_settings.use_hdr_view = True
                 # scene.view_settings.view_transform = "Khronos PBR Neutral"
                 scene.sequencer_colorspace_settings.name = "Khronos PBR Neutral sRGB"
-
                 scene.cycles.use_denoising = True
-
                 # set the frame for the best lighting
                 scene.frame_set(the_best_lighting_frame)
                 # render with the probe name
@@ -188,24 +195,14 @@ def clean_and_render_place(
                     scene.camera.data.clip_start = 0.1
                     scene.camera.data.clip_end = 10000
 
-                    setup_video_rendering()
                     # toggle the depth toggle off
                     scene.node_tree.nodes["switch_depth"].check = False
-                    toggle_world_volume(True)
-                    toggle_depth_hidden_objects(True)
-                    toggle_depth_visible_objects(False)
-                    toggle_probe_visible_objects(False)
-                    scene.view_settings.view_transform = "Khronos PBR Neutral"
-                    scene.sequencer_colorspace_settings.name = (
-                        "Khronos PBR Neutral sRGB"
-                    )
-                    scene.view_settings.use_hdr_view = False
-                    scene.cycles.use_denoising = True
 
-                    reenable_hidden_meshes()
-                    hide_meshes_for_camera(camera_object.name, False)
+                    setup_color_render()
 
-                    setup_cam_background()
+                    # wait a bit to give the scene time to update
+                    time.sleep(0.5)
+
                     # render without the depth name
                     custom_render_video(
                         cam_name=camera_object.name,
@@ -226,24 +223,9 @@ def clean_and_render_place(
                 # render depth video
                 if not depth_textures_exist or should_overwrite_render:
 
-                    setup_video_rendering()
                     scene.camera = camera_object
-                    # toggle the depth toggle on
-                    scene.node_tree.nodes["switch_depth"].check = True
-                    scene.camera = camera_object
-                    toggle_world_volume(False)
-                    toggle_depth_hidden_objects(False)
-                    toggle_depth_visible_objects(True)
-                    toggle_probe_visible_objects(False)
-                    scene.view_settings.view_transform = "Raw"
-                    scene.sequencer_colorspace_settings.name = "sRGB"
-                    scene.view_settings.use_hdr_view = False
-                    scene.cycles.use_denoising = False
 
-                    reenable_hidden_meshes()
-                    hide_meshes_for_camera(camera_object.name, True)
-
-                    set_faster_depth_materials()
+                    setup_depth_render()
 
                     # customRenderVideo(video_output_path_with_depth)
                     custom_render_video(
@@ -254,43 +236,24 @@ def clean_and_render_place(
                         is_depth=True,
                     )
 
-                    unset_faster_depth_materials()
-
-                    scene.view_settings.view_transform = "Khronos PBR Neutral"
-                    scene.sequencer_colorspace_settings.name = (
-                        "Khronos PBR Neutral sRGB"
-                    )
-                    scene.view_settings.use_hdr_view = False
-
-                    reenable_hidden_meshes()
-
-                    # scene.camera.data.clip_start = originalClipStart
-                    # scene.camera.data.clip_end = originalClipEnd
                     combine_frames_to_images(
                         camera_object.name, segment_name, is_depth_video=True
+                    )
+                    # Go back to color rendering
+                    setup_color_render()
+                    include_only_two_collections(
+                        view_layer, collections["Exportable"], collections["Details"]
                     )
 
             # setup_probe_rendering
             reenable_all_meshes()
 
-    # create join instructions for videos, and join videos
-
-    # combine all the camera names into a join_color_vids.txt and join_depth_vids.txt
-    # combine_videos(
-    #     renders_folder_path=place_info.renders_folder_path,
-    #     place_folder_path=place_info.place_folder_path,
-    #     camera_names=place_info.camera_names,
-    #     segments_for_cams=place_info.segments_for_cams,
-    # )
-
     # Save the typescript files
     save_typescript_files()
-    print("done :) ✨, converting probes ")
+    print("done rendering :) ✨")
 
-    # subprocess.run(
-    #     "npx github:HugoMcPhee/hdr-to-babylon-env 128", cwd=place_folder_path
-    # )
     if should_convert_probes:
+        print("converting probes ")
         subprocess.call(
             f"cd {place_info.renders_folder_path} && npx github:HugoMcPhee/hdr-to-babylon-env 128",
             shell=True,
@@ -310,5 +273,4 @@ def clean_and_render_place(
                     os.path.join(probe_textures_path, new_file_name),
                 )
 
-    print("delete frames")
     print("all done :)")

@@ -54,7 +54,7 @@ class PlaceInfo:
     this_place_name: str = ""
 
     # --------
-    # Scene
+    # Names
     place_names: StringList = make_empty_field(list)
     camera_names: StringList = make_empty_field(list)
     wall_names: StringList = make_empty_field(list)
@@ -62,8 +62,11 @@ class PlaceInfo:
     trigger_names: StringList = make_empty_field(list)
     spot_names: StringList = make_empty_field(list)
     soundspot_names: StringList = make_empty_field(list)
+    # --------
+    # Scene
     #  60 so it can be divided into lots of others ( 1, 2, 5, 6, 10, 12, 15, 20, 30 )
     scene_framerate: int = 60
+    render_quality: int = 5
     original_resolution_x: int = 1440  # = scene.render.resolution_x
     original_resolution_y: int = 1440  # = scene.render.resolution_y
     segments_info: Dict[str, Segment] = field(default_factory=dict)

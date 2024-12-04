@@ -21,13 +21,45 @@ def combine_frames_to_images(cam_name, segment_name, is_depth_video=False):
     node_script_path = os.path.join(
         plugin_path, "nodeScripts", "combineFrames", "combineFrames.js"
     )
+    command = ["node", node_script_path]
+    if is_depth_video:
+        command.append(" --depth")
     subprocess.run(
-        ["node", node_script_path],
+        command,
         cwd=rendered_frames_path,
     )
-    ktx2_arguments_string = "--bcmp"
+
+    # for quick testing, use lower fast quality settings
+    # ktx2_arguments_string = "--encode etc1s"
+    # if is_depth_video:
+    #     ktx2_arguments_string = "--encode etc1s --target_type R"
+
+    # ktx2_arguments_string = "--encode etc1s --qlevel 254 --clevel 5"
+    # if is_depth_video:
+    #     ktx2_arguments_string = "--encode etc1s --qlevel 254 --clevel 5 --target_type R"
+
+    # ktx2_arguments_string = "--encode etc1s --qlevel 128 --clevel 4"
+    # if is_depth_video:
+    #     ktx2_arguments_string = "--encode etc1s --qlevel 128 --clevel 4 --target_type R"
+
+    # ktx2_arguments_string = "--encode etc1s --qlevel 255 --clevel 5"
+    # if is_depth_video:
+    #     ktx2_arguments_string = "--encode etc1s --qlevel 255 --clevel 5 --target_type R"
+    ktx2_arguments_string = "--encode etc1s --qlevel 5"
     if is_depth_video:
-        ktx2_arguments_string = "--bcmp --target_type R --qlevel 5"
+        ktx2_arguments_string = "--encode etc1s --qlevel 5 --target_type R"
+
+    # ktx2_arguments_string = "--encode uastc --uastc_quality 1 --zcmp 19"
+    # if is_depth_video:
+    #     ktx2_arguments_string = "--encode uastc --uastc_quality 4 --target_type R --assign_oetf linear --zcmp 19"
+
+    existing_backdrop_textures_name_prefix = (
+        f"{cam_name}_{segment_name}_{backdrop_type}_"
+    )
+    # delete any files in the backdrops folder that have the same prefix
+    for old_file in os.listdir(os.path.join(place_info.place_folder_path, "backdrops")):
+        if old_file.startswith(existing_backdrop_textures_name_prefix):
+            os.remove(os.path.join(place_info.place_folder_path, "backdrops", old_file))
 
     # find all files in rendered_frames_path that have the extension .png
     for file in os.listdir(rendered_frames_path):
@@ -54,20 +86,6 @@ def combine_frames_to_images(cam_name, segment_name, is_depth_video=False):
                 os.path.join(place_info.place_folder_path, "backdrops")
             ):
                 os.makedirs(os.path.join(place_info.place_folder_path, "backdrops"))
-
-            existing_backdrop_textures_name_prefix = (
-                f"{cam_name}_{segment_name}_{backdrop_type}_"
-            )
-            # delete any files in the backdrops folder that have the same prefix
-            for old_file in os.listdir(
-                os.path.join(place_info.place_folder_path, "backdrops")
-            ):
-                if old_file.startswith(existing_backdrop_textures_name_prefix):
-                    os.remove(
-                        os.path.join(
-                            place_info.place_folder_path, "backdrops", old_file
-                        )
-                    )
 
             new_ktx2_file_path = os.path.join(
                 place_info.place_folder_path,

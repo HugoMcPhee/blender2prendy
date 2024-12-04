@@ -32,15 +32,42 @@ def include_only_two_collections(
             layer_collection.exclude = False
 
 
-def enable_all_child_collections(collection_to_include_name: bpy.types.StringProperty):
-    view_layer = get_view_layer()
+# def enable_all_child_collections(collection_to_include_name: bpy.types.StringProperty):
+#     view_layer = get_view_layer()
 
-    # NOTE HAVE to loop through view_layer ?? , can't loop through collection.children ohwell
-    for collection in view_layer.layer_collection.children[
-        collection_to_include_name
-    ].children:
-        # print(collection.name)
-        collection.exclude = False
+#     # NOTE HAVE to loop through view_layer ?? , can't loop through collection.children ohwell
+#     for collection in view_layer.layer_collection.children[
+#         collection_to_include_name
+#     ].children:
+#         # print(collection.name)
+#         collection.exclude = False
+
+
+def enable_collection_and_children(collection_name):
+    view_layer = bpy.context.view_layer
+    layer_collection = find_layer_collection(
+        view_layer.layer_collection, collection_name
+    )
+    if layer_collection:
+        set_collection_and_children_exclude(layer_collection, False)
+    else:
+        print(f"Collection '{collection_name}' not found in the view layer.")
+
+
+def find_layer_collection(layer_collection, collection_name):
+    if layer_collection.name == collection_name:
+        return layer_collection
+    for child in layer_collection.children:
+        found = find_layer_collection(child, collection_name)
+        if found:
+            return found
+    return None
+
+
+def set_collection_and_children_exclude(layer_collection, exclude_state):
+    layer_collection.exclude = exclude_state
+    for child in layer_collection.children:
+        set_collection_and_children_exclude(child, exclude_state)
 
 
 def add_collection_to_scene(new_name):

@@ -5,7 +5,7 @@ from ..places.cam_background import setup_cam_background
 from ..utils.collections import (
     add_collection_to_exportable_collection,
     add_collection_to_scene,
-    enable_all_child_collections,
+    enable_collection_and_children,
 )
 from .place_info import place_info
 from .probes import setup_camera_probes
@@ -26,7 +26,7 @@ def setup_video_rendering():
     scene.render.use_persistent_data = True
 
 
-def setup_place(the_render_quality, the_framerate):
+def setup_place(the_framerate):
     scene = get_scene()
 
     # -------------------------------------------------
@@ -42,7 +42,7 @@ def setup_place(the_render_quality, the_framerate):
     add_collection_to_exportable_collection("soundspots")
     add_collection_to_scene("Details")
 
-    enable_all_child_collections("Exportable")
+    enable_collection_and_children("Exportable")
     update_items_and_variables()
 
     # -------------------------------------------------
@@ -91,9 +91,10 @@ def setup_place(the_render_quality, the_framerate):
     render_layers_node.location = 0, 0
 
     # create back-image toggle switch node
-    switch_background_node = tree.nodes.new(type="CompositorNodeSwitch")
-    switch_background_node.name = "switch_background"
-    switch_background_node.location = 600, 250
+    switch_image_background_node = tree.nodes.new(type="CompositorNodeSwitch")
+    switch_image_background_node.name = "switch_background"
+    switch_image_background_node.label = "Use Background"
+    switch_image_background_node.location = 600, 250
 
     # create image node
     image_node = tree.nodes.new(type="CompositorNodeImage")
@@ -114,16 +115,19 @@ def setup_place(the_render_quality, the_framerate):
     # create alpha over node
     alpha_over_node = tree.nodes.new(type="CompositorNodeAlphaOver")
     alpha_over_node.name = "alpha_over"
+    alpha_over_node.label = "Blend Render/Image"
     alpha_over_node.location = 400, 300
 
     # create value node for camera near clip
     near_clip_value_node = tree.nodes.new(type="CompositorNodeValue")
     near_clip_value_node.name = "near_clip"
+    near_clip_value_node.label = "Near Clip"
     near_clip_value_node.location = 300, -400
 
     # create value node for camera far clip (below the near clip node)
     far_clip_value_node = tree.nodes.new(type="CompositorNodeValue")
     far_clip_value_node.name = "far_clip"
+    far_clip_value_node.label = "Far Clip"
     far_clip_value_node.location = 300, -500
 
     # create a clip_range subtract node to subtract the near clip from the far clip (to the right of the clip value nodes)
@@ -164,6 +168,7 @@ def setup_place(the_render_quality, the_framerate):
     # create depth toggle switch node
     switch_depth_node = tree.nodes.new(type="CompositorNodeSwitch")
     switch_depth_node.name = "switch_depth"
+    switch_depth_node.label = "Use Depth"
     switch_depth_node.location = 700, 0
 
     # create output node
@@ -183,13 +188,13 @@ def setup_place(the_render_quality, the_framerate):
     # link scale to alpha over
     links.new(scale_node.outputs[0], alpha_over_node.inputs[1])
     # link alpha over to background switch
-    links.new(alpha_over_node.outputs[0], switch_background_node.inputs[1])
+    links.new(alpha_over_node.outputs[0], switch_image_background_node.inputs[1])
     # render image to alpha over
     links.new(render_layers_node.outputs[0], alpha_over_node.inputs[2])
     # link render image to background switch
-    links.new(render_layers_node.outputs[0], switch_background_node.inputs[0])
+    links.new(render_layers_node.outputs[0], switch_image_background_node.inputs[0])
     # link background switch to depth switch
-    links.new(switch_background_node.outputs[0], switch_depth_node.inputs[0])
+    links.new(switch_image_background_node.outputs[0], switch_depth_node.inputs[0])
     #
 
     # connect the camera near clip values to the subtract node
@@ -279,9 +284,9 @@ def setup_place(the_render_quality, the_framerate):
     divide_driver_variable.targets[0].data_path = "camera.data.clip_end"
 
     # Add other drivers for depth stuff
-    add_depth_switch_driver(scene, "cycles.samples", the_render_quality, 1)
+    # add_depth_switch_driver(scene, "cycles.samples", the_render_quality, 1)
     # NOTE motion_blur_shutter should be 0 for depth, but it crashes with GPU Optix rendering in cycles x
-    add_depth_switch_driver(scene, "render.motion_blur_shutter", 0.5, 0.1)
+    add_depth_switch_driver(scene, "render.motion_blur_shutter", 0.5, 0)
     # now done before render
     # '"Filmic"', '"Raw"'
     # add_depth_switch_driver(scene, "view_settings.view_transform", 2.1, 4.1)

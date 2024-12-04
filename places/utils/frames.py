@@ -11,6 +11,8 @@ def setup_frames_info():
     place_info.first_frame = 9999
     place_info.last_frame = -9999
 
+    place_info.render_quality = scene.render_tool_info.the_render_quality
+
     for action in bpy.data.actions:
         if action.frame_range[1] > place_info.last_frame:
             place_info.last_frame = action.frame_range[1]

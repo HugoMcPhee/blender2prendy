@@ -112,3 +112,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# any node_modules folders in the project or subdirectories
+**/node_modules/

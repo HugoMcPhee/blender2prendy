@@ -14,7 +14,19 @@ def custom_render_video(
     segments_info,
     is_depth=False,
 ):
+    # Exit early
+    return
+
     scene = get_scene()
+
+    # Render once to make sure everything setup TODO make this much lower resolution
+    original_resolution_x = scene.render.resolution_x
+    original_resolution_y = scene.render.resolution_y
+    scene.render.resolution_x = 1
+    scene.render.resolution_y = 1
+    bpy.ops.render.render(animation=False, write_still=False)
+    scene.render.resolution_x = original_resolution_x
+    scene.render.resolution_y = original_resolution_y
 
     # segments_info, chosen_framerate paramerter
     # get_renders_folder_path()
@@ -68,7 +80,7 @@ def custom_render_video(
         scene.render.image_settings.color_depth = "8"
         scene.render.image_settings.compression = 15
 
+        time.sleep(0.01)
         bpy.ops.render.render(animation=False, write_still=True)
-        time.sleep(0.1)
 
     print("done making frames")
