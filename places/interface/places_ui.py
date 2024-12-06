@@ -90,6 +90,7 @@ class RenderTools_Properties(PropertyGroup):
             ("2", "2", ""),
             ("1", "1", "good for trying stuff out"),
         ],
+        default="12",
     )
     show_camcubes: BoolProperty(
         name="show camera cubes",

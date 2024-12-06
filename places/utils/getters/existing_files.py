@@ -5,7 +5,7 @@ import time
 import bpy
 
 from ....places.clean_and_render_place.make_place_gltf import make_place_gltf
-from ....utils.folders import get_plugin_folder
+from ....utils.folders import get_plugin_folder, make_folder_if_not_exists
 from ....utils.getters.get_things import get_collections, get_scene, get_view_layer
 from ....places.place_info import place_info
 
@@ -25,6 +25,7 @@ def get_render_exists(cam_name, segment_name, is_depth_video=False):
 
 
 def get_backdrop_texture_exists(cam_name, segment_name, is_depth_video=False):
+    make_folder_if_not_exists(os.path.join(place_info.place_folder_path, "backdrops"))
     backdrop_texures_path = os.path.join(place_info.place_folder_path, "backdrops")
     backdrop_type = "color"
     if is_depth_video:

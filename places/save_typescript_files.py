@@ -1,5 +1,7 @@
 from math import floor
 import os
+
+from ..utils.folders import make_folder_if_not_exists
 from ..places.place_info import place_info
 
 
@@ -51,6 +53,11 @@ def save_typescript_files():
 
                 # Loop through the files in backdrops folder that have the file_name_start, and count how many there are
                 textures_amount = 0
+
+                make_folder_if_not_exists(
+                    os.path.join(place_info.place_folder_path, "backdrops")
+                )
+
                 backdrops_directory = os.path.join(place_folder_path, "backdrops")
                 for file_name in os.listdir(backdrops_directory):
                     if file_name.startswith(file_name_start + "_color_"):

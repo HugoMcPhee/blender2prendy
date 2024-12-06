@@ -15,7 +15,7 @@ def custom_render_video(
     is_depth=False,
 ):
     # Exit early
-    return
+    # return
 
     scene = get_scene()
 

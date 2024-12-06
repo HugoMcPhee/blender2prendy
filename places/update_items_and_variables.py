@@ -64,4 +64,4 @@ def update_items_and_variables():
     setup_mesh_objects()
 
     # Show all place_info in console as stringified object
-    print(place_info)
+    # print(place_info)

@@ -4,7 +4,7 @@ import subprocess
 
 from ...places.utils.getters.existing_files import get_render_frames_folder_path
 from ...places.place_info import place_info
-from ...utils.folders import get_plugin_folder
+from ...utils.folders import get_plugin_folder, make_folder_if_not_exists
 
 
 def combine_frames_to_images(cam_name, segment_name, is_depth_video=False):
@@ -42,12 +42,12 @@ def combine_frames_to_images(cam_name, segment_name, is_depth_video=False):
     # if is_depth_video:
     #     ktx2_arguments_string = "--encode etc1s --qlevel 128 --clevel 4 --target_type R"
 
-    # ktx2_arguments_string = "--encode etc1s --qlevel 255 --clevel 5"
-    # if is_depth_video:
-    #     ktx2_arguments_string = "--encode etc1s --qlevel 255 --clevel 5 --target_type R"
-    ktx2_arguments_string = "--encode etc1s --qlevel 5"
+    ktx2_arguments_string = "--encode etc1s --qlevel 255 --clevel 5"
     if is_depth_video:
-        ktx2_arguments_string = "--encode etc1s --qlevel 5 --target_type R"
+        ktx2_arguments_string = "--encode etc1s --qlevel 255 --clevel 5 --target_type R"
+    # ktx2_arguments_string = "--encode etc1s --qlevel 5"
+    # if is_depth_video:
+    #     ktx2_arguments_string = "--encode etc1s --qlevel 5 --target_type R"
 
     # ktx2_arguments_string = "--encode uastc --uastc_quality 1 --zcmp 19"
     # if is_depth_video:
@@ -56,6 +56,9 @@ def combine_frames_to_images(cam_name, segment_name, is_depth_video=False):
     existing_backdrop_textures_name_prefix = (
         f"{cam_name}_{segment_name}_{backdrop_type}_"
     )
+
+    make_folder_if_not_exists(os.path.join(place_info.place_folder_path, "backdrops"))
+
     # delete any files in the backdrops folder that have the same prefix
     for old_file in os.listdir(os.path.join(place_info.place_folder_path, "backdrops")):
         if old_file.startswith(existing_backdrop_textures_name_prefix):

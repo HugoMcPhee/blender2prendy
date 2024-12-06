@@ -1,16 +1,18 @@
 import fs from "fs";
 import path from "path";
 import sharp from "sharp";
-import pngquant from "pngquant-bin";
-import { spawn } from "child_process";
+// import { spawn } from "child_process";
 
 // Configuration
 const framesDir = "./"; // Directory containing frame images
 const outputDir = "./"; // Directory to save atlas images
-const framesPerTexture = 16; // Max frames per texture image
 const columns = 4; // Number of columns in the grid
-const frameWidth = 2048; // Width of each frame
-const frameHeight = 2048; // Height of each frame
+const framesPerTexture = columns * columns; // Max frames per texture image
+const finalTextureMaxWidth = 8192; // Maximum width of the final texture
+let frameWidth = 2048; // Width of each frame
+// let frameWidth = 1638; // Width of each frame
+// let frameWidth = finalTextureMaxWidth / columns; // Width of each frame
+let frameHeight = frameWidth; // Height of each frame
 
 // Ensure output directory exists
 if (!fs.existsSync(outputDir)) {
@@ -71,6 +73,15 @@ let frameFiles = fs
   // Break frames into batches
   let textureCount = 0;
   while (frameFiles.length > 0) {
+    // update the width and height based on reading the first frame
+    if (textureCount === 0) {
+      const { width, height } = await sharp(
+        path.join(framesDir, frameFiles[0])
+      ).metadata();
+      frameWidth = width;
+      frameHeight = height;
+    }
+
     textureCount++;
     const batchFrames = frameFiles.splice(0, framesPerTexture);
     const frameCount = batchFrames.length;
